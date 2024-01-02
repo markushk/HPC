@@ -4,25 +4,41 @@
 #include <vector>
 #include <algorithm>
 #include <mpi.h>
+#include <chrono>
+#include <thread>
 
 
-char get_random_value(const int row_id, const int col_id, const int n,
-			 const int seed) {
+// char get_random_value(const int row_id, const int col_id, const int n,
+// 			 const int seed) {
+//     char r = '0';
+//     int my_seed = seed + row_id * n + col_id;
+//     //printf("my_seed: %d\n", my_seed);
+//     srand(my_seed);
+//     //rand();
+//     //printf("rand=%d\n", rand());
+//     rand();
+//     r = (rand() % 2) ? '1' : '0';
+//     return r;
+// }
+
+char get_random_value(const int row_id, const int col_id, const int n, const int seed, double probability) {
     char r = '0';
     int my_seed = seed + row_id * n + col_id;
-    //printf("my_seed: %d\n", my_seed);
     srand(my_seed);
-    //rand();
-    //printf("rand=%d\n", rand());
-    rand();
-    r = (rand() % 2) ? '1' : '0';
+
+    double rand_value = static_cast<double>(rand()) / RAND_MAX;
+
+    if (rand_value < probability) {
+        r = '1';
+    }
+
     return r;
 }
 
-void initial_configuration(std::vector<std::vector<char>> &world, int rows, int cols, int seed) {
+void initial_configuration(std::vector<std::vector<char>> &world, int rows, int cols, int seed, double probability) {
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            world[i][j] = get_random_value(i, j, cols, seed);
+            world[i][j] = get_random_value(i, j, cols, seed, probability);
         }
     }
 }
@@ -44,11 +60,24 @@ void print_status(std::vector<std::vector<char>> &world, int rows, int cols) {
     std::cout << "number of dead cells: " << rows*cols - alive << std::endl;
 }
 
+void print_field_animated(std::vector<std::vector<char>> &world, int rows, int cols) {
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (world[i][j] == '1') std::cout << " X";
+            else std::cout << " .";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\x1B[" << rows << "A";  // Carriage return to move back to the beginning of the line
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));  // Adjust delay as needed
+    std::cout.flush();  // Flush the output
+}
+
 void print_field(std::vector<std::vector<char>> &world, int rows, int cols) {
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             if (world[i][j] == '1') std::cout << " X";
-            else std::cout << " O";
+            else std::cout << " .";
         }
         std::cout << std::endl;
     }
@@ -94,6 +123,7 @@ void life(std::vector<std::vector<char>> &world, std::vector<std::vector<char>> 
             }
         }
     world = world_copy;
+    // print_field(world, rows, cols);
     }
 }
     
@@ -101,20 +131,21 @@ void life(std::vector<std::vector<char>> &world, std::vector<std::vector<char>> 
 
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
-    if (argc != 6) {
-        std::cerr << "Usage: " << argv[0] << " <generations> <rows> <cols> <type> <repetitions>\n";
+    if (argc != 7) {
+        std::cerr << "Usage: " << argv[0] << " <generations> <rows> <cols> <seed> <probability(%)> <repetitions>\n";
         return EXIT_FAILURE;
     }
     int generations = std::stoi(argv[1]);
     int rows = std::stoi(argv[2]);
     int cols = std::stoi(argv[3]);
-    int type = std::stoi(argv[4]);
-    int repetitions = std::stoi(argv[5]);
+    int seed = std::stoi(argv[4]);
+    double probability = std::stod(argv[5]);
+    int repetitions = std::stoi(argv[6]);
 
     for (int i=0; i<repetitions; i++) {
         std::vector<std::vector<char>> world(rows, std::vector<char>(cols));
         std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
-        initial_configuration(world, rows, cols, type);
+        initial_configuration(world, rows, cols, seed, probability/100);
         world_copy = world;
         std::cout << "initial configuration: " << std::endl;
         print_field(world, rows, cols);
