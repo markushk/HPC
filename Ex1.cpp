@@ -85,6 +85,7 @@ void print_field(std::vector<std::vector<char>> &world, int rows, int cols) {
 }
 
 int plus(int x, int m) {
+    //std::cout << (x + 1) % (m);
     return (x+1)%m;
 }
 
@@ -102,6 +103,7 @@ int count_neighbours(std::vector<std::vector<char>> &world, int i, int j, int ro
     if (world[plus(i,rows)][minus(j,cols)] == '1') number_of_neighbours++; // up left
     if (world[plus(i,rows)][j] == '1') number_of_neighbours++; // up
     if (world[plus(i,rows)][plus(j,cols)] == '1') number_of_neighbours++; // up right
+    std::cout << number_of_neighbours;
     return number_of_neighbours;
 }
 
