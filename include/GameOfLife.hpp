@@ -6,7 +6,7 @@
 
 class GameOfLife {
 public:
-    GameOfLife(int rows, int cols, int seed, double probability);
+    GameOfLife(int rows, int cols, int seed, double probability,int px,int py);
     ~GameOfLife();
 
     void initialConfiguration();
@@ -18,12 +18,18 @@ public:
     void finalizempi();
     void testCommunication();
     void pointToPoint();
+    void gatherMatrix();
+    void exchangePointToPoint();
+    void printFieldAll();
+
 
 private:
     int _rows;
     int _cols;
     int _seed;
     double _probability;
+    int _px;
+    int _py;
     std::vector<std::vector<char>> _world;
     std::vector<std::vector<char>> _worldCopy;
     MPI_Comm _cart;
@@ -42,7 +48,6 @@ private:
     char getRandomValue(int row_id, int col_id);
     int countAlive();
     int countNeighbours(int i, int j);
-    int countNeighbours_parallel(int i, int j);
 
     int plus(int x, int m);
     int minus(int x, int m);

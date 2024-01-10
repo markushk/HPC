@@ -24,6 +24,7 @@
 char get_random_value(const int row_id, const int col_id, const int n, const int seed, double probability) {
     char r = '0';
     int my_seed = seed + row_id * n + col_id;
+    //std::cout << "seed: " << my_seed <<"\n";
     srand(my_seed);
 
     double rand_value = static_cast<double>(rand()) / RAND_MAX;
@@ -39,6 +40,7 @@ void initial_configuration(std::vector<std::vector<char>> &world, int rows, int 
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             world[i][j] = get_random_value(i, j, cols, seed, probability);
+            //std::cout << "i,j: " << i << " " << j << "\n";
         }
     }
 }
@@ -103,7 +105,7 @@ int count_neighbours(std::vector<std::vector<char>> &world, int i, int j, int ro
     if (world[plus(i,rows)][minus(j,cols)] == '1') number_of_neighbours++; // up left
     if (world[plus(i,rows)][j] == '1') number_of_neighbours++; // up
     if (world[plus(i,rows)][plus(j,cols)] == '1') number_of_neighbours++; // up right
-    std::cout << number_of_neighbours;
+    //std::cout << number_of_neighbours;
     return number_of_neighbours;
 }
 
