@@ -6,7 +6,7 @@
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
     if (argc != 9) {
-        std::cerr << "Usage: " << argv[0] << " <generations> <rows> <cols> <seed> <probability(%)> <repetitions>\n";
+      std::cerr << "Usage: " << argv[0] << " <generations> <rows> <cols> <seed> <probability(%)> <repetitions> <px> <py>\n";
         return EXIT_FAILURE;
     }
     int generations = std::stoi(argv[1]);
@@ -21,10 +21,10 @@ int main(int argc, char* argv[]) {
     int p;
     MPI_Comm_size(MPI_COMM_WORLD, &p);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank)
-;    
+;
     rows=rows/py;
     cols=cols/px;
-    
+
 
 
 
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
         GameOfLife game(rows, cols, seed, probability / 100,px,py);
         game.initialConfiguration();
         //game.printField();
-        
+
         std::cout << "Initial configuration: " << std::endl;
         //game.initialConfiguration();
         //game.printFieldAll();
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
                 game.printFieldAll();
             }
         }
-        
+
         //game.printFieldAll();
         game.exchangePointToPoint();
         for (int i = 0; i < p; ++i) {
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
         }
         //game.printFieldAll();
         /*game.printStatus();
-        
+
         double start_time = MPI_Wtime();
         game.runLife(generations);
         double end_time = MPI_Wtime();
