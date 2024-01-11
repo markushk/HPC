@@ -58,8 +58,8 @@ int count_alive(std::vector<std::vector<char>> &world, int rows, int cols) {
 
 void print_status(std::vector<std::vector<char>> &world, int rows, int cols) {
     int alive = count_alive(world, rows, cols);
-    std::cout << "number of alive cells: " << alive << std::endl;
-    std::cout << "number of dead cells: " << rows*cols - alive << std::endl;
+    std::cout << "Number of alive cells: " << alive << std::endl;
+    std::cout << "Number of dead cells: " << rows*cols - alive << std::endl;
 }
 
 void print_field_animated(std::vector<std::vector<char>> &world, int rows, int cols) {
@@ -151,9 +151,9 @@ int main(int argc, char* argv[]) {
         std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
         initial_configuration(world, rows, cols, seed, probability/100);
         world_copy = world;
-        std::cout << "initial configuration: " << std::endl;
-        print_field(world, rows, cols);
-        print_status(world, rows, cols);
+        //std::cout << "initial configuration: " << std::endl;
+        //print_field(world, rows, cols);
+        //print_status(world, rows, cols);
         // print_field(world_copy, rows, cols);
 
         double start_time = MPI_Wtime();
@@ -161,11 +161,11 @@ int main(int argc, char* argv[]) {
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
 
-        std::cout << "\n\nfinal configuration: " << std::endl;
+        //std::cout << "\n\nfinal configuration: " << std::endl;
         print_field(world, rows, cols);
 
         print_status(world, rows, cols);
-        std::cout << "It took " << elapsed_time * 1e6 << " microseconds." << std::endl;
+        //std::cout << "It took " << elapsed_time * 1e6 << " microseconds." << std::endl;
     }
 
     MPI_Finalize();
