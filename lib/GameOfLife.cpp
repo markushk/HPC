@@ -25,7 +25,7 @@ void GameOfLife::initialConfiguration() {
         for (int j = 1; j < _cols-1; ++j) {
 
             //_world[i][j] = getRandomValue(i + coords[0] * (_rows-2), j + coords[1] * (_cols -2));
-            _world[i][j] = getRandomValue(i + coords[0] * (_rows), j + coords[1] * (_cols));
+            _world[i][j] = getRandomValue((i-1) + coords[1] * (_rows-2), (j-1) + coords[0] * (_cols-2));
             //_world[i][j] = getRandomValue(i, j);
         }
     }
@@ -33,7 +33,7 @@ void GameOfLife::initialConfiguration() {
 
 char GameOfLife::getRandomValue(int row_id, int col_id) {
     char r = '0';
-    int my_seed = _seed + (row_id - 1) * (_cols - 2) + col_id -1;
+    int my_seed = _seed + row_id * (_cols - 2)*_px + col_id;
     srand(my_seed);
 
     double rand_value = static_cast<double>(rand()) / RAND_MAX;
