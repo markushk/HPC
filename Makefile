@@ -1,14 +1,14 @@
 CXX = mpic++
 CXXFLAGS = -std=c++11 -Wall
 
-TARGET = Ex1
-MAIN_TARGET = test
+TARGET = test1
+MAIN_TARGET = test2
 
-$(TARGET): Ex1.cpp
-	$(CXX) $(CXXFLAGS) -o $(TARGET) Ex1.cpp
+$(TARGET): test.cpp
+	$(CXX) $(CXXFLAGS) -o $(TARGET) test.cpp
 
-$(MAIN_TARGET): test.cpp
-	$(CXX) $(CXXFLAGS) -o $(MAIN_TARGET) test.cpp
+$(MAIN_TARGET): test_copy.cpp
+	$(CXX) $(CXXFLAGS) -o $(MAIN_TARGET) test_copy.cpp
 
 clean:
 	rm -f $(TARGET) $(MAIN_TARGET)

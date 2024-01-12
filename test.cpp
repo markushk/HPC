@@ -7,10 +7,28 @@
 #include <chrono>
 #include <thread>
 
-void print_field(std::vector<std::vector<char>> &world, int rows, int cols) {
+
+
+template <class T>
+class matrix2D { 
+    std::vector<T> data;
+    int columns;
+public:
+    T &operator()(int x, int y) {
+        return data[y * columns + x];
+    }
+
+    // matrix2D(int x, int y) : data(x*y), columns(x) {}
+    matrix2D(int x, int y, const T &initialValue = T()) : data(x * y, initialValue), columns(x) {}
+
+};
+
+
+
+void print_field(matrix2D<char> &world, int rows, int cols) {
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            std::cout << " " << world[i][j];
+            std::cout << " " << world(i,j);
         }
         std::cout << std::endl;
     }
@@ -32,12 +50,16 @@ char get_random_value(const int row_id, const int col_id, const int n, const int
     return r;
 }
 
-void initial_configuration(std::vector<std::vector<char>> &world, int rows, int cols, int seed, double probability) {
+void initial_configuration(matrix2D<char> &world, int rows, int cols, int seed, double probability) {
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            world[i][j] = get_random_value(i, j, cols, seed, probability);
+            world(i,j) = get_random_value(i, j, cols, seed, probability);
         }
     }
+}
+
+int c(int x, int y, int cols) {
+    return x * cols + y;
 }
 
 
@@ -62,13 +84,14 @@ int main(int argc, char *argv[]) {
 
 
 
-    int rank_rows = rows/py + 2;
-    int rank_cols = cols / px + 2;
+    int rank_rows = rows/px + 2;
+    int rank_cols = cols / py + 2;
 
-    std::vector<std::vector<char>> world(rank_rows, std::vector<char>(rank_cols,'0'+rank));
+    matrix2D<char> world(rank_rows, rank_cols, '0'+rank);
+    matrix2D<char> world_copy(rank_rows, rank_cols, '.');
     // initial_configuration(world, rank_rows, rank_cols, seed, probability/100);
 
-    if (rank == 4) {
+    if (rank == 0) {
         std::cout << "initial configuration: \n";
         print_field(world, rank_rows, rank_cols);
     }
@@ -77,7 +100,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm grid_comm;
     int dims[2] = {px, py};
     int periods[2] = {1, 1}; // Periodic grid in both dimensions
-    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &grid_comm);
+    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 0, &grid_comm);
 
     // Determine the coordinates of the current process in the 2D grid
     int coords[2];
@@ -102,10 +125,10 @@ int main(int argc, char *argv[]) {
     MPI_Cart_rank(grid_comm, lowerRightCoords, &lowerRight_neighbor);
     MPI_Cart_rank(grid_comm, upperLeftCoords, &upperLeft_neighbor);
 
-    int neighbors[8] = {top_neighbor, bottom_neighbor, left_neighbor, right_neighbor,
-                        upperRight_neighbor, lowerLeft_neighbor, lowerRight_neighbor, upperLeft_neighbor};
+    int neighbors[8] = {upperLeft_neighbor, lowerLeft_neighbor, upperRight_neighbor, lowerRight_neighbor,
+                        top_neighbor, bottom_neighbor, left_neighbor, right_neighbor};
 
-    if (rank==4) {
+    if (rank == 0) {
         std::cout << "rank_rows: " << rank_rows << " rank_cols: " << rank_cols << std::endl;
         std::cout << "coords[0]: " << coords[0] << " coords[1]: " << coords[1] << std::endl;
         std::cout << "top_neighbor: " << top_neighbor << " bottom_neighbor: " << bottom_neighbor << std::endl;
@@ -129,97 +152,110 @@ int main(int argc, char *argv[]) {
                                &new_comm);       // 10. new_communicator (output communicator)
 
     
-    int number_of_ghostlayer_elements = 2*(rank_cols + rank_rows) - 4;
-    char* send_data = new char[number_of_ghostlayer_elements]; // Example data to be sent
 
-    // can be done in initilization
-    int iterate = rank_cols;
-    if (rank_rows > rank_cols)
-        iterate = rank_rows;
-    //
 
-    //write to buffer from world
-    for (int i = 0; i<iterate; i++) { 
-        if (i<rank_cols) {
-            send_data[i] = world[0][i]; // top left, top, top right
-            send_data[i+rank_cols] = world[rank_rows-1][i]; // bottom left, bottom, bottom right
-        }
-        if (i<rank_rows-2) {
-            send_data[i+2*rank_cols] = world[i+1][0]; // left
-            send_data[i+2*rank_cols+rank_rows-2] = world[i+1][rank_cols-1]; // right
-        }
+    int t = 8;
+    int sendcount[t], recvcount[t];
+    MPI_Aint senddisp[t], recvdisp[t];
+    MPI_Datatype sendtype[t], recvtype[t];
+
+    for (int i=0; i<t; i++) {
+        sendcount[i] = 1;
+        recvcount[i] = 1;
     }
 
-    // order of ghostcells in send_data: [top left, top, top right, bottom left, bottom, bottom right, left, right]
+    MPI_Datatype ROW, COL, COR;
+  
+    MPI_Type_contiguous(rank_cols-2,MPI_CHAR,&ROW);
+    MPI_Type_commit(&ROW);
+    MPI_Type_vector(rank_rows-2,1,rank_cols,MPI_CHAR,&COL);
+    MPI_Type_commit(&COL);
+    MPI_Type_contiguous(1,MPI_CHAR,&COR);
+    MPI_Type_commit(&COR);
 
-    int number_of_neighbours = 8;
-    // Prepare send and receive buffers
-    // can be done in initilization
-    int send_counts[8] = {1, rank_cols-2, 1, 1, rank_cols-2, 1, rank_rows-2, rank_rows-2};
-    int send_displs[8] = {0};
-    for (int i=1; i<8;i++) {
-        send_displs[i] = send_counts[i-1] + send_displs[i-1];
+    if (rank == 0) {
+        std::cout << "ROW: " << rank_cols-2;
+        std::cout << "\nCOL: " << rank_rows-2 << std::endl;
     }
-    //
+
+
+    // order: top left, top right, bottom left, bottom right, left, right, top, bottom,  
     
+    senddisp[0] = c(1, 1, rank_cols);                       sendtype[0] = COR; // top left
+    senddisp[1] = c(1, rank_cols-2, rank_cols);             sendtype[1] = COR; // top right
+    senddisp[2] = c(rank_rows-2, 1, rank_cols);             sendtype[2] = COR; // bottom left
+    senddisp[3] = c(rank_rows-2, rank_cols-2, rank_cols);   sendtype[3] = COR; // bottom left
+    senddisp[4] = senddisp[0];                              sendtype[4] = COL; // left
+    senddisp[5] = senddisp[1];                              sendtype[5] = COL; // right
+    senddisp[6] = senddisp[0];                              sendtype[6] = ROW; // top
+    senddisp[7] = senddisp[2];                              sendtype[7] = ROW; // bottom
 
-    // Allocate memory for send and receive buffers
-    char* recv_buffer = new char[number_of_ghostlayer_elements];
-    if (rank==4) {
-        std::cout << "send_data:" << " ";
-        for (int i = 0; i<number_of_ghostlayer_elements; i++) {
-            std::cout << send_data[i] << " ";
+    // ghost layers:
+    // order: bottom right, bottom left, top right, top left, right, left, bottom, top,
+    recvdisp[0] = c(rank_rows-1, rank_cols-1, rank_cols);   recvtype[0] = COR; // bottom right
+    recvdisp[1] = c(rank_rows-1, 0, rank_cols);             recvtype[1] = COR; // bottom left
+    recvdisp[2] = c(0, rank_cols-1, rank_cols);             recvtype[2] = COR; // top right
+    recvdisp[3] = c(0, 0, rank_cols);                       recvtype[3] = COR; // top left
+    recvdisp[4] = c(1, rank_cols-1, rank_cols);             recvtype[4] = COL; // right
+    recvdisp[5] = c(1, 0, rank_cols);                       recvtype[5] = COL; // left
+    recvdisp[6] = c(rank_rows-1, 1, rank_cols);             recvtype[6] = ROW; // bottom
+    recvdisp[7] = c(0, 1, rank_cols);                       recvtype[7] = ROW; // top
+        
+    // byte offsets
+    for (int i=0; i<t; i++) {
+        senddisp[i] *= sizeof(char);
+        recvdisp[i] *= sizeof(char);
+    }
+
+    if (rank == 0) {
+        std::cout << "send_data:" << "\n";
+        print_field(world, rank_rows, rank_cols);
+
+        std::cout << "sendcount:" << " ";
+        for (int i = 0; i<8; i++) {
+            std::cout << sendcount[i] << " ";
         }
         std::cout << std::endl;
 
-        std::cout << "send_counts:" << " ";
+        std::cout << "senddisp:" << " ";
         for (int i = 0; i<8; i++) {
-            std::cout << send_counts[i] << " ";
+            std::cout << senddisp[i] << " ";
         }
         std::cout << std::endl;
 
-        std::cout << "send_displs:" << " ";
+        std::cout << "recvcount:" << " ";
         for (int i = 0; i<8; i++) {
-            std::cout << send_displs[i] << " ";
+            std::cout << recvcount[i] << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << "recvdisp:" << " ";
+        for (int i = 0; i<8; i++) {
+            std::cout << recvdisp[i] << " ";
         }
         std::cout << std::endl;
     }
 
-    // Perform MPI_Neighbor_alltoallv
-    MPI_Neighbor_alltoallv(&send_data, send_counts, send_displs, MPI_CHAR,
-                           recv_buffer, send_counts, send_displs, MPI_CHAR, new_comm);
+
+    MPI_Neighbor_alltoallw(&world(0,0),sendcount,senddisp,sendtype,
+			   &world(0,0),recvcount,recvdisp,recvtype,new_comm);
 
 
-    //write to world from buffer
-    for (int i = 0; i<iterate; i++) { 
-        if (i<rank_cols) {
-            world[0][i] = recv_buffer[i]; // top left, top, top right
-            world[rank_rows-1][i] = recv_buffer[i+rank_cols]; // bottom left, bottom, bottom right
-        }
-        if (i<rank_rows-2) {
-            world[i+1][0] = recv_buffer[i+2*rank_cols]; // left
-            world[i+1][rank_cols-1] = recv_buffer[i+2*rank_cols+rank_rows]; // right
-        }
-    }
 
     // Output received data
-    if (rank==4) {
+    if (rank == 0) {
         std::cout << "Rank " << rank << " has neighbors: ";
-        for (int i = 0; i < number_of_neighbours; ++i) {
+        for (int i = 0; i < t; ++i) {
             std::cout << neighbors[i] << " ";
         }
         std::cout << std::endl;
 
-        std::cout << "Rank " << rank << " received data: ";
-        for (int i = 0; i < number_of_ghostlayer_elements; ++i) {
-            std::cout << recv_buffer[i] << " ";
-        }
+        std::cout << "Rank " << rank << " received data: \n";
+        print_field(world, rank_rows, rank_cols);
         std::cout << std::endl;
     }
 
     // Clean up
-    delete[] send_data;
-    delete[] recv_buffer;
 
     // Now you can use MPI_Send and MPI_Recv or MPI_Isend and MPI_Irecv to exchange information with the top and bottom neighbors
     MPI_Comm_free(&new_comm);
