@@ -5,8 +5,8 @@
 
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
-    if (argc != 9) {
-      std::cerr << "Usage: " << argv[0] << " <generations> <rows> <cols> <seed> <probability(%)> <repetitions> <px> <py>\n";
+    if (argc != 10) {
+      std::cerr << "Usage: " << argv[0] << " <generations> <rows> <cols> <seed> <probability(%)> <repetitions> <px> <py> <method>\n";
         return EXIT_FAILURE;
     }
     int generations = std::stoi(argv[1]);
@@ -17,6 +17,8 @@ int main(int argc, char* argv[]) {
     int repetitions = std::stoi(argv[6]);
     int px = std::stoi(argv[7]);
     int py = std::stoi(argv[8]);
+    std::string method = std::string(argv[9]);
+
 
     int rank, all_cols, all_rows;
     int p;
@@ -78,7 +80,7 @@ int main(int argc, char* argv[]) {
         // game.printStatus();
 
         double start_time = MPI_Wtime();
-        game.runLife(generations,"col");
+        game.runLife(generations,std::string(method));
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
         //std::cout << "\n\nFinal configuration: " << std::endl;
@@ -96,7 +98,7 @@ int main(int argc, char* argv[]) {
                 game.printField();
             }
         }*/
-        // game.printFieldAll();
+        //game.printFieldAll();
         game.gatherMatrix(all_rows, all_cols);
         if (rank==0) {
             game.printWholeWorld(all_rows, all_cols);

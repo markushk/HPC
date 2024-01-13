@@ -141,7 +141,7 @@ void GameOfLife::runLife(int generations, std::string method="p2p") {
     for (int gen = 0; gen < generations; gen++) {
         if (method == "p2p") {exchangePointToPoint();};
         if (method == "p2pc") {exchangePointToPointCorners();};
-        if (method == "col") {exchangeCollective();};
+        if (method == "coll") {exchangeCollective();};
         for (int i = 1; i < _rows-1; ++i) {
             for (int j = 1; j < _cols-1; ++j) {
                 int neighbours = countNeighbours(i, j);
@@ -529,14 +529,14 @@ void GameOfLife::exchangeCollective() {
     }
 
     if (own_neighbor==false) {
-        recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
-        recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
-        recvdisp[2] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
-        recvdisp[3] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
-        recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
-        recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
-        recvdisp[6] = c(0, 1);               recvtype[6] =  _rowType; // top
-        recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
+             recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
+             recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
+             recvdisp[2] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
+             recvdisp[3] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
+             recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
+             recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
+             recvdisp[6] = c(0, 1);               recvtype[6] =  _rowType; // top
+             recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
     }
     else {
         recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
@@ -551,28 +551,28 @@ void GameOfLife::exchangeCollective() {
     
 
         
-    // if (rank == 4) {
-    //     std::cout << "neighbors: ";
-    //     for (int i=0; i<t; i++) {
-    //         std::cout <<" " << _neighbors[i];
-    //     }
-    //     std::cout << std::endl;
-    //     std::cout << "senddisp: ";
-    //     for (int i=0; i<t; i++) {
-    //         std::cout <<" " << senddisp[i];
-    //     }
-    //     std::cout << std::endl;
-    //     std::cout << "recvdisp: ";
-    //     for (int i=0; i<t; i++) {
-    //         std::cout <<" " << recvdisp[i];
-    //     }
-    //     std::cout << std::endl;
-    // }
+     /*if (rank == 2) {
+         std::cout << "neighbors: ";
+         for (int i=0; i<t; i++) {
+             std::cout <<" " << _neighbors[i];
+         }
+         std::cout << std::endl;
+         std::cout << "senddisp: ";
+         for (int i=0; i<t; i++) {
+             std::cout <<" " << senddisp[i];
+         }
+         std::cout << std::endl;
+         std::cout << "recvdisp: ";
+         for (int i=0; i<t; i++) {
+             std::cout <<" " << recvdisp[i];
+         }
+         std::cout << std::endl;
+     }
     // byte offsets
     for (int i=0; i<t; i++) {
         senddisp[i] *= sizeof(char);
         recvdisp[i] *= sizeof(char);
-    }
+    }*/
 
     MPI_Neighbor_alltoallw(&_world(0,0),sendcount,senddisp,sendtype,
 			               &_world(0,0),recvcount,recvdisp,recvtype,_coll);
