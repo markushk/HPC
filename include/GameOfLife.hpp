@@ -29,7 +29,8 @@ public:
     void printFieldAnimated();
     void printField();
     void printWholeWorld(int all_rows, int all_cols);
-    void runLife(int generations);
+    void runLifep2p(int generations);
+    void runLifep2pCorners(int generations);
     void init_mpi();
     void finalizempi();
     void testCommunication();

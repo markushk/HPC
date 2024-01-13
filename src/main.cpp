@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
         // game.printStatus();
 
         double start_time = MPI_Wtime();
-        game.runLife(generations);
+        game.runLifep2p(generations);
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
         //std::cout << "\n\nFinal configuration: " << std::endl;
