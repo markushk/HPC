@@ -124,9 +124,11 @@ void GameOfLife::printFieldAll() {
     std::cout << std::endl;
 }
 
-void GameOfLife::runLifep2p(int generations) {
+void GameOfLife::runLife(int generations, std::string method="p2p") {
     for (int gen = 0; gen < generations; gen++) {
-        exchangePointToPoint();
+        if (method == "p2p") {exchangePointToPoint();};
+        if (method == "p2pc") {exchangePointToPointCorners();};
+        //if (method == "col") {exchangeCollective();};
         for (int i = 1; i < _rows-1; ++i) {
             for (int j = 1; j < _cols-1; ++j) {
                 int neighbours = countNeighbours(i, j);
@@ -151,32 +153,7 @@ void GameOfLife::runLifep2p(int generations) {
     }
 }
 
-void GameOfLife::runLifep2pCorners(int generations) {
-    for (int gen = 0; gen < generations; gen++) {
-        exchangePointToPointCorners();
-        for (int i = 1; i < _rows-1; ++i) {
-            for (int j = 1; j < _cols-1; ++j) {
-                int neighbours = countNeighbours(i, j);
 
-                if (_world(i,j) == '0') {
-                    if (neighbours == 3) {
-                        _worldCopy(i,j) = '1';
-                    } else {
-                        _worldCopy(i,j) = '0';
-                    }
-                } else {
-                    if (neighbours != 2 && neighbours != 3) {
-                        _worldCopy(i,j) = '0';
-                    } else {
-                        _worldCopy(i,j) = '1';
-                    }
-                }
-            }
-        }
-        // std::copy(&_world(0,0), &_world(0,0)+_rows*_cols,&_worldCopy(0,0));
-        _world = _worldCopy;
-    }
-}
 
 
 
