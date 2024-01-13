@@ -46,6 +46,10 @@ char GameOfLife::getRandomValue(int row_id, int col_id) {
     return r;
 }
 
+int GameOfLife::c(int x, int y) {
+    return x * _cols + y;
+}
+
 void GameOfLife::printStatus() {
     int alive = countAlive();
     std::cout << "Number of alive cells: " << alive << std::endl;
@@ -128,7 +132,7 @@ void GameOfLife::runLife(int generations, std::string method="p2p") {
     for (int gen = 0; gen < generations; gen++) {
         if (method == "p2p") {exchangePointToPoint();};
         if (method == "p2pc") {exchangePointToPointCorners();};
-        //if (method == "col") {exchangeCollective();};
+        if (method == "col") {exchangeCollective();};
         for (int i = 1; i < _rows-1; ++i) {
             for (int j = 1; j < _cols-1; ++j) {
                 int neighbours = countNeighbours(i, j);
@@ -238,6 +242,13 @@ void GameOfLife::init_mpi() {
     MPI_Cart_shift(_cart, 0, 1, &_left, &_right);
     MPI_Comm_rank(_cart, &rank);
     MPI_Cart_coords(_cart, rank, 2, _coords);
+
+    MPI_Type_contiguous(_cols,MPI_CHAR,&_ROW);
+    MPI_Type_commit(&_ROW);
+    MPI_Type_vector(_rows-2,1,_cols,MPI_CHAR,&_COL);
+    MPI_Type_commit(&_COL);
+    MPI_Type_contiguous(1,MPI_CHAR,&_COR);
+    MPI_Type_commit(&_COR);
 }
 
 
@@ -419,70 +430,53 @@ void GameOfLife::exchangePointToPointCorners() {
 
 }
 
-// void GameOfLife::exchangeCollective() {
-//     int top, bot, left, right, rank;
-//     int coords[2];
+void GameOfLife::exchangeCollective() {
+    int t = 8;
+    int neighbors[t] = {_upperLeftRank, _upperRightRank, _lowerLeftRank, _lowerRightRank,
+                        _left, _right, _top, _bot};
 
-//     MPI_Cart_shift(_cart, 1, 1, &top, &bot);
-//     MPI_Cart_shift(_cart, 0, 1, &left, &right);
-//     MPI_Comm_rank(_cart, &rank);
-//     MPI_Cart_coords(_cart, rank, 2, coords);
+    MPI_Comm new_comm;
+    MPI_Dist_graph_create_adjacent(_cart, t, neighbors, MPI_UNWEIGHTED, 
+                                          t, neighbors, MPI_UNWEIGHTED, 
+                                          MPI_INFO_NULL, 0, &new_comm);
 
+    int sendcount[t], recvcount[t];
+    MPI_Aint senddisp[t], recvdisp[t];
+    MPI_Datatype sendtype[t], recvtype[t];
 
-//     int neighbors[8] = {_upperLeftRank, _upperRightRank, _lowerLeftRank, _lowerRightRank,
-//                         left, right, top, bot};
+    for (int i=0; i<t; i++) {
+        sendcount[i] = 1;
+        recvcount[i] = 1;
+    }
 
-//     int t = 8;
-//     MPI_Comm new_comm;
-//     MPI_Dist_graph_create_adjacent(_cart,   // 1. old_communicator
-//                                t,                // 2. indegree
-//                                neighbors,        // 3. sources (array of input nodes for indegree)
-//                                MPI_UNWEIGHTED,   // 4. inweights (weights of the input nodes, in this case, MPI_UNWEIGHTED)
-//                                t,                // 5. outdegree
-//                                neighbors,        // 6. destinations (array of output nodes for outdegree)
-//                                MPI_UNWEIGHTED,   // 7. outweights (weights of the output nodes, in this case, MPI_UNWEIGHTED)
-//                                MPI_INFO_NULL,    // 8. info (hints and optimization information)
-//                                0,                // 9. reorder (allows the system to reorder the processes, 0 for false, 1 for true)
-//                                &new_comm);       // 10. new_communicator (output communicator)
-    
+    // order: top left, top right, bottom left, bottom right, left, right, top, bottom,  
+    senddisp[0] = c(1, 1);               sendtype[0] = _COR; // top left
+    senddisp[1] = c(1, _cols-2);         sendtype[1] = _COR; // top right
+    senddisp[2] = c(_rows-2, 1);         sendtype[2] = _COR; // bottom left
+    senddisp[3] = c(_rows-2, _cols-2);   sendtype[3] = _COR; // bottom left
+    senddisp[4] = senddisp[0];           sendtype[4] = _COL; // left
+    senddisp[5] = senddisp[1];           sendtype[5] = _COL; // right
+    senddisp[6] = senddisp[0];           sendtype[6] = _ROW; // top
+    senddisp[7] = senddisp[2];           sendtype[7] = _ROW; // bottom
 
-//     MPI_Irecv(&_world(_rows-1,1], 1, _rowType, bot, 0, _cart, &req[1]);
-//     MPI_Irecv(&_world(0,1], 1, _rowType, top, 1, _cart, &req[0]);
-//     MPI_Isend(&_world(1,1], 1, _rowType, top, 0, _cart, &req[2]);
-//     MPI_Isend(&_world(_rows-2,1], 1, _rowType, bot, 1, _cart, &req[3]);
-  
-//     MPI_Waitall(4, req, statuses);
+    // ghost layers:
+    // order: bottom right, bottom left, top right, top left, right, left, bottom, top,
+    recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] = _COR; // bottom right
+    recvdisp[1] = c(_rows-1, 0);         recvtype[1] = _COR; // bottom left
+    recvdisp[2] = c(0, _cols-1);         recvtype[2] = _COR; // top right
+    recvdisp[3] = c(0, 0);               recvtype[3] = _COR; // top left
+    recvdisp[4] = c(1, _cols-1);         recvtype[4] = _COL; // right
+    recvdisp[5] = c(1, 0);               recvtype[5] = _COL; // left
+    recvdisp[6] = c(_rows-1, 1);         recvtype[6] = _ROW; // bottom
+    recvdisp[7] = c(0, 1);               recvtype[7] = _ROW; // top
+        
+    // byte offsets
+    for (int i=0; i<t; i++) {
+        senddisp[i] *= sizeof(char);
+        recvdisp[i] *= sizeof(char);
+    }
 
-//     MPI_Irecv(&recvColLeft[0], _rows-2, MPI_CHAR, right, 0, _cart, &req[0]);
-//     MPI_Irecv(&recvColRight[0], _rows-2, MPI_CHAR, left, 1, _cart, &req[1]);
-//     MPI_Isend(&sendColLeft[0], _rows-2, MPI_CHAR, left, 0, _cart, &req[3]);
-//     MPI_Isend(&sendColRight[0], _rows-2, MPI_CHAR, right, 1, _cart, &req[2]);
+    MPI_Neighbor_alltoallw(&_world(0,0),sendcount,senddisp,sendtype,
+			               &_world(0,0),recvcount,recvdisp,recvtype,new_comm);
 
-//     MPI_Waitall(4, req, statuses);
-//     // Send to upper left
-//     MPI_Isend(&_world(1,1], 1, MPI_CHAR, _upperLeftRank, 1, _cart, &send_request[0]);
-//     MPI_Irecv(&_world(0,0], 1, MPI_CHAR, _upperLeftRank, 0, _cart, &recv_request[0]);
-
-//     // Send to upper right
-//     MPI_Isend(&_world(1,_cols-2], 1, MPI_CHAR, _upperRightRank, 2, _cart, &send_request[1]);
-//     MPI_Irecv(&_world(0,_cols-1], 1, MPI_CHAR, _upperRightRank, 4, _cart, &recv_request[1]);
-
-//     // Send to lower left
-//     MPI_Isend(&_world(_rows-2,1], 1, MPI_CHAR, _lowerLeftRank, 4, _cart, &send_request[2]);
-//     MPI_Irecv(&_world(_rows-1,0], 1, MPI_CHAR, _lowerLeftRank, 2, _cart, &recv_request[2]);
-
-//     // Send to lower right
-//     MPI_Isend(&_world(_rows-2,_cols-2], 1, MPI_CHAR, _lowerRightRank, 0, _cart, &send_request[3]);
-//     MPI_Irecv(&_world(_rows-1,_cols-1], 1, MPI_CHAR, _lowerRightRank, 1, _cart, &recv_request[3]);
-
-//     // Wait for all operations to complete
-//     MPI_Waitall(4, send_request, send_status);
-//     MPI_Waitall(4, recv_request, recv_status);
-
-
-//     for (int i = 1; i < _rows-1; ++i) {
-//         _world(i,_cols-1] = recvColLeft[i-1];  
-//         _world(i,0] = recvColRight[i-1];
-//     }
-
-// }
+}

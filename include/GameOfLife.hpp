@@ -39,6 +39,7 @@ public:
     void gatherMatrix(int all_rows, int all_cols);
     void exchangePointToPoint();
     void exchangePointToPointCorners();
+    void exchangeCollective();
     void printFieldAll();
     void printStatusAll(int all_rows, int all_cols);
 
@@ -62,6 +63,7 @@ private:
     MPI_Datatype _fullColType;
     MPI_Datatype _fullRowType;
     MPI_Datatype _cornerType;
+    MPI_Datatype _ROW, _COL, _COR;
     int _ndims = 2;
     int _dims[2];
     int _period[2];
@@ -83,6 +85,7 @@ private:
 
     int plus(int x, int m);
     int minus(int x, int m);
+    int c(int x, int y);
 };
 
 #endif // GAMEOFLIFE_H
