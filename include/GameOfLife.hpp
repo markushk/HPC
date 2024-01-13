@@ -36,6 +36,7 @@ public:
     void pointToPoint();
     void gatherMatrix(int all_rows, int all_cols);
     void exchangePointToPoint();
+    void exchangePointToPointCorners();
     void printFieldAll();
     void printStatusAll(int all_rows, int all_cols);
 
@@ -56,6 +57,8 @@ private:
     MPI_Comm _cart;
     MPI_Datatype _colType;
     MPI_Datatype _rowType;
+    MPI_Datatype _fullColType;
+    MPI_Datatype _fullRowType;
     MPI_Datatype _cornerType;
     int _ndims = 2;
     int _dims[2];
