@@ -60,11 +60,16 @@ private:
     int _ndims = 2;
     int _dims[2];
     int _period[2];
+    int _coords[2];
 
     int _upperRightRank;
     int _lowerLeftRank;
     int _lowerRightRank;
     int _upperLeftRank;
+    int _top;
+    int _bot;
+    int _left;
+    int _right;
 
     char getRandomValue(int row_id, int col_id);
     int countAlive();

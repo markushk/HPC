@@ -222,6 +222,10 @@ void GameOfLife::init_mpi() {
     MPI_Cart_rank(_cart, lowerLeftCoords, &_lowerLeftRank);
     MPI_Cart_rank(_cart, lowerRightCoords, &_lowerRightRank);
     MPI_Cart_rank(_cart, upperLeftCoords, &_upperLeftRank);
+    MPI_Cart_shift(_cart, 1, 1, &_top, &_bot);
+    MPI_Cart_shift(_cart, 0, 1, &_left, &_right);
+    MPI_Comm_rank(_cart, &rank);
+    MPI_Cart_coords(_cart, rank, 2, _coords);
 }
 
 
@@ -279,10 +283,7 @@ void GameOfLife::gatherMatrix(int all_rows, int all_cols) {
 }
 
 void GameOfLife::exchangePointToPoint() {
-    int top, bot, left, right, rank;
-    int coords[2];
 
-  
     /*if (rank == 9) {
         std::cout << "coord x: " << coords[0] << "\n";
         std::cout << "coord y: " << coords[1] << "\n";
@@ -296,29 +297,20 @@ void GameOfLife::exchangePointToPoint() {
         std::cout << "botright: " << _lowerRightRank << "\n";
 
     }*/
-
-
-    std::vector<char> recvColLeft(_rows-2);
-    std::vector<char> recvColRight(_rows-2);
     MPI_Request send_request[4], recv_request[4];
     MPI_Status send_status[4], recv_status[4];
     MPI_Request req[4];
     MPI_Status statuses[4];
 
-    MPI_Cart_shift(_cart, 1, 1, &top, &bot);
-    MPI_Cart_shift(_cart, 0, 1, &left, &right);
-    MPI_Comm_rank(_cart, &rank);
-    MPI_Cart_coords(_cart, rank, 2, coords);
+    MPI_Irecv(&_world(_rows-1,1), 1, _rowType, _bot, 5, _cart, &req[1]);
+    MPI_Irecv(&_world(0,1), 1, _rowType, _top, 6, _cart, &req[0]);
+    MPI_Isend(&_world(1,1), 1, _rowType, _top, 5, _cart, &req[2]);
+    MPI_Isend(&_world(_rows-2,1), 1, _rowType, _bot, 6, _cart, &req[3]);
 
-    MPI_Irecv(&_world(_rows-1,1), 1, _rowType, bot, 5, _cart, &req[1]);
-    MPI_Irecv(&_world(0,1), 1, _rowType, top, 6, _cart, &req[0]);
-    MPI_Isend(&_world(1,1), 1, _rowType, top, 5, _cart, &req[2]);
-    MPI_Isend(&_world(_rows-2,1), 1, _rowType, bot, 6, _cart, &req[3]);
-
-    MPI_Irecv(&_world(1,_cols-1), 1, _colType, right, 7, _cart, &req[0]);
-    MPI_Irecv(&_world(1,0), 1, _colType, left, 8, _cart, &req[1]);
-    MPI_Isend(&_world(1,1), 1, _colType, left, 7, _cart, &req[3]);
-    MPI_Isend(&_world(1,_cols-2), 1, _colType, right, 8, _cart, &req[2]);
+    MPI_Irecv(&_world(1,_cols-1), 1, _colType, _right, 7, _cart, &req[0]);
+    MPI_Irecv(&_world(1,0), 1, _colType, _left, 8, _cart, &req[1]);
+    MPI_Isend(&_world(1,1), 1, _colType, _left, 7, _cart, &req[3]);
+    MPI_Isend(&_world(1,_cols-2), 1, _colType, _right, 8, _cart, &req[2]);
 
     // Send to upper left
     MPI_Isend(&_world(1,1), 1, MPI_CHAR, _upperLeftRank, 1, _cart, &send_request[0]);
