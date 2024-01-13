@@ -34,18 +34,22 @@ int main(int argc, char* argv[]) {
 
         GameOfLife game(rows, cols, seed, probability / 100,px,py);
         game.initialConfiguration();
-        /*game.gatherMatrix(all_rows, all_cols);
-        game.printField();
-        if (rank==0) {
-            game.printWholeWorld(all_rows, all_cols);
-            //game.printStatusAll(all_rows, all_cols);
-            //game.countAliveAll(all_rows, all_cols);
-        }*/
+    //     game.gatherMatrix(all_rows, all_cols);
+    //     if (rank==0) {
+    //         game.printWholeWorld(all_rows, all_cols);
+    //         //game.printStatusAll(all_rows, all_cols);
+    //         //game.countAliveAll(all_rows, all_cols);
+    //     }
+    //     game.exchangeCollective();
+    //     for (int i = 0; i < p; ++i) {
+    //         MPI_Barrier(MPI_COMM_WORLD);
+    //         if (rank == i) {
+    //             std::cout << "Rank " << rank << " Final configuration:" << std::endl;
+    //             game.printFieldAll();
+    //     }
+    //    }
+    
         //game.printField();
-
-        //std::cout << "Initial configuration: " << std::endl;
-        //game.initialConfiguration();
-        //game.printFieldAll();
         //game.exchangePointToPoint();
         //game.printFieldAll();
         //game.printFieldAll();
@@ -74,7 +78,7 @@ int main(int argc, char* argv[]) {
         // game.printStatus();
 
         double start_time = MPI_Wtime();
-        game.runLife(generations,"p2pc");
+        game.runLife(generations,"col");
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
         //std::cout << "\n\nFinal configuration: " << std::endl;
@@ -92,7 +96,7 @@ int main(int argc, char* argv[]) {
                 game.printField();
             }
         }*/
-        //game.printFieldAll();
+        // game.printFieldAll();
         game.gatherMatrix(all_rows, all_cols);
         if (rank==0) {
             game.printWholeWorld(all_rows, all_cols);

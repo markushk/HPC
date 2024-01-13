@@ -58,6 +58,7 @@ private:
     // std::vector<std::vector<char>> _worldCopy;
     // std::vector<std::vector<char>> _wholeWorld;
     MPI_Comm _cart;
+    MPI_Comm _coll;
     MPI_Datatype _colType;
     MPI_Datatype _rowType;
     MPI_Datatype _fullColType;
@@ -77,6 +78,7 @@ private:
     int _bot;
     int _left;
     int _right;
+    int _neighbors[8];
 
     char getRandomValue(int row_id, int col_id);
     int countAlive();

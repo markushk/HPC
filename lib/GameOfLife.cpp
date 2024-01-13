@@ -9,9 +9,9 @@
 
 GameOfLife::GameOfLife(int rows, int cols, int seed, double probability,int px,int py)
     : _rows(rows + 2), _cols(cols + 2), _seed(seed), _probability(probability),_px(px),_py(py),
-      _world(_rows, _cols),
-       _worldCopy(_rows, _cols),
-      _wholeWorld(rows*py, cols*px),
+      _world(_rows, _cols,'#'),
+       _worldCopy(_rows, _cols,'#'),
+      _wholeWorld(rows*py, cols*px,'#'),
       _cart(MPI_COMM_WORLD), _colType(MPI_DATATYPE_NULL), _rowType(MPI_DATATYPE_NULL), _cornerType(MPI_DATATYPE_NULL),
       _upperRightRank(-1), _lowerLeftRank(-1), _lowerRightRank(-1), _upperLeftRank(-1) {
     init_mpi();
@@ -28,6 +28,7 @@ void GameOfLife::initialConfiguration() {
     for (int i = 1; i < _rows-1; ++i) {
         for (int j = 1; j < _cols-1; ++j) {
             _world(i,j) = getRandomValue((i-1) + coords[1] * (_rows-2), (j-1) + coords[0] * (_cols-2));
+            // _world(i,j) = '0'+((i-1) + coords[1] * (_rows-2))*_rows+((j-1) + coords[0] * (_cols-2));
         }
     }
 }
@@ -47,8 +48,15 @@ char GameOfLife::getRandomValue(int row_id, int col_id) {
 }
 
 int GameOfLife::c(int x, int y) {
-    return x * _cols + y;
+    return y * _rows + x;
 }
+
+// 0 5 10 15 20 25 30 35
+// 1 6 11 16 21 26 31 36
+// 2 7 12 17 22 27 32 37
+// 3 8 13 18 23 28 33 38
+// 4 9 14 19 24 29 34 39
+
 
 void GameOfLife::printStatus() {
     int alive = countAlive();
@@ -118,10 +126,11 @@ void GameOfLife::printWholeWorld(int all_rows, int all_cols) {
 void GameOfLife::printFieldAll() {
     for (int i = 0; i < _rows; ++i) {
         for (int j = 0; j < _cols; ++j) {
-            if (_world(i,j) == '1')
-                std::cout << " X";
-            else
-                std::cout << " .";
+            std::cout <<" " << _world(i,j);
+            // if (_world(i,j) == '1')
+            //     std::cout << " X";
+            // else
+            //     std::cout << " .";
         }
         std::cout << std::endl;
     }
@@ -243,12 +252,46 @@ void GameOfLife::init_mpi() {
     MPI_Comm_rank(_cart, &rank);
     MPI_Cart_coords(_cart, rank, 2, _coords);
 
-    MPI_Type_contiguous(_cols,MPI_CHAR,&_ROW);
-    MPI_Type_commit(&_ROW);
-    MPI_Type_vector(_rows-2,1,_cols,MPI_CHAR,&_COL);
-    MPI_Type_commit(&_COL);
-    MPI_Type_contiguous(1,MPI_CHAR,&_COR);
-    MPI_Type_commit(&_COR);
+    // 0 1 2
+    // 3 4 5
+    // 6 7 8
+
+    // 0 3 6
+    // 1 4 7
+    // 2 5 8
+
+    // rank 4:
+    // 0 5 10 15 20
+    // 1 6 11 16 21
+    // 2 7 12 17 22
+    // 3 8 13 18 23
+    // 4 9 14 19 24
+
+    // 0 1 2 3 4
+    // 5 6 7 8 9
+    // 10 11 12 13 14
+
+
+    _neighbors[0] = _upperLeftRank;
+    _neighbors[1] = _upperRightRank;
+    _neighbors[2] = _lowerLeftRank;
+    _neighbors[3] = _lowerRightRank;
+    _neighbors[4] = _left;
+    _neighbors[5] = _right;
+    _neighbors[6] = _top;
+    _neighbors[7] = _bot;
+
+    MPI_Dist_graph_create_adjacent(_cart, 8, _neighbors, MPI_UNWEIGHTED, 
+                                          8, _neighbors, MPI_UNWEIGHTED, 
+                                          MPI_INFO_NULL, 0, &_coll);
+    
+
+    // MPI_Type_contiguous(_cols-2,MPI_CHAR,&_ROW);
+    // MPI_Type_commit(&_ROW);
+    // MPI_Type_vector(_rows-2,1,_cols,MPI_CHAR,&_COL);
+    // MPI_Type_commit(&_COL);
+    // MPI_Type_contiguous(1,MPI_CHAR,&_COR);
+    // MPI_Type_commit(&_COR);
 }
 
 
@@ -431,14 +474,18 @@ void GameOfLife::exchangePointToPointCorners() {
 }
 
 void GameOfLife::exchangeCollective() {
+    
+    
     int t = 8;
-    int neighbors[t] = {_upperLeftRank, _upperRightRank, _lowerLeftRank, _lowerRightRank,
-                        _left, _right, _top, _bot};
-
-    MPI_Comm new_comm;
-    MPI_Dist_graph_create_adjacent(_cart, t, neighbors, MPI_UNWEIGHTED, 
-                                          t, neighbors, MPI_UNWEIGHTED, 
-                                          MPI_INFO_NULL, 0, &new_comm);
+    int rank;
+    MPI_Comm_rank(_coll, &rank);
+    // for (int i = 0; i < 9; ++i) {
+    //     MPI_Barrier(MPI_COMM_WORLD);
+    //     if (rank == i) {
+    //         std::cout << "rank " << rank << " before sending:\n";
+    //         printFieldAll();
+    //     }
+    // }
 
     int sendcount[t], recvcount[t];
     MPI_Aint senddisp[t], recvdisp[t];
@@ -450,26 +497,77 @@ void GameOfLife::exchangeCollective() {
     }
 
     // order: top left, top right, bottom left, bottom right, left, right, top, bottom,  
-    senddisp[0] = c(1, 1);               sendtype[0] = _COR; // top left
-    senddisp[1] = c(1, _cols-2);         sendtype[1] = _COR; // top right
-    senddisp[2] = c(_rows-2, 1);         sendtype[2] = _COR; // bottom left
-    senddisp[3] = c(_rows-2, _cols-2);   sendtype[3] = _COR; // bottom left
-    senddisp[4] = senddisp[0];           sendtype[4] = _COL; // left
-    senddisp[5] = senddisp[1];           sendtype[5] = _COL; // right
-    senddisp[6] = senddisp[0];           sendtype[6] = _ROW; // top
-    senddisp[7] = senddisp[2];           sendtype[7] = _ROW; // bottom
+    senddisp[0] = c(1, 1);               sendtype[0] =  _cornerType; // top left
+    senddisp[1] = c(1, _cols-2);         sendtype[1] =  _cornerType; // top right
+    senddisp[2] = c(_rows-2, 1);         sendtype[2] =  _cornerType; // bottom left
+    senddisp[3] = c(_rows-2, _cols-2);   sendtype[3] =  _cornerType; // bottom left
+    senddisp[4] = senddisp[0];           sendtype[4] =  _colType; // left
+    senddisp[5] = senddisp[1];           sendtype[5] =  _colType; // right
+    senddisp[6] = senddisp[0];           sendtype[6] =  _rowType; // top
+    senddisp[7] = senddisp[2];           sendtype[7] =  _rowType; // bottom
+    // senddisp[4] = senddisp[0];           sendtype[4] =  _colType; // left
+    // senddisp[5] = senddisp[1];           sendtype[5] =  _colType; // right
+    // senddisp[6] = senddisp[0];           sendtype[6] =  _rowType; // top
+    // senddisp[7] = senddisp[2];           sendtype[7] =  _rowType; // bottom
+
+
 
     // ghost layers:
     // order: bottom right, bottom left, top right, top left, right, left, bottom, top,
-    recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] = _COR; // bottom right
-    recvdisp[1] = c(_rows-1, 0);         recvtype[1] = _COR; // bottom left
-    recvdisp[2] = c(0, _cols-1);         recvtype[2] = _COR; // top right
-    recvdisp[3] = c(0, 0);               recvtype[3] = _COR; // top left
-    recvdisp[4] = c(1, _cols-1);         recvtype[4] = _COL; // right
-    recvdisp[5] = c(1, 0);               recvtype[5] = _COL; // left
-    recvdisp[6] = c(_rows-1, 1);         recvtype[6] = _ROW; // bottom
-    recvdisp[7] = c(0, 1);               recvtype[7] = _ROW; // top
+    // recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
+    // recvdisp[1] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
+    // recvdisp[2] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
+    // recvdisp[3] = c(0, 0);               recvtype[3] =  _cornerType; // top left
+    // recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
+    // recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
+    // recvdisp[6] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
+    // recvdisp[7] = c(0, 1);               recvtype[7] =  _rowType; // top
+    bool own_neighbor = false;
+    for (int i=0;i<t;i++) {
+        if (rank==_neighbors[i])
+            own_neighbor = true;
+    }
+
+    if (own_neighbor==false) {
+        recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
+        recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
+        recvdisp[2] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
+        recvdisp[3] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
+        recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
+        recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
+        recvdisp[6] = c(0, 1);               recvtype[6] =  _rowType; // top
+        recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
+    }
+    else {
+        recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
+        recvdisp[1] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
+        recvdisp[2] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
+        recvdisp[3] = c(0, 0);               recvtype[3] =  _cornerType; // top left
+        recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
+        recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
+        recvdisp[6] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
+        recvdisp[7] = c(0, 1);               recvtype[7] =  _rowType; // top
+    }
+    
+
         
+    // if (rank == 4) {
+    //     std::cout << "neighbors: ";
+    //     for (int i=0; i<t; i++) {
+    //         std::cout <<" " << _neighbors[i];
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << "senddisp: ";
+    //     for (int i=0; i<t; i++) {
+    //         std::cout <<" " << senddisp[i];
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << "recvdisp: ";
+    //     for (int i=0; i<t; i++) {
+    //         std::cout <<" " << recvdisp[i];
+    //     }
+    //     std::cout << std::endl;
+    // }
     // byte offsets
     for (int i=0; i<t; i++) {
         senddisp[i] *= sizeof(char);
@@ -477,6 +575,17 @@ void GameOfLife::exchangeCollective() {
     }
 
     MPI_Neighbor_alltoallw(&_world(0,0),sendcount,senddisp,sendtype,
-			               &_world(0,0),recvcount,recvdisp,recvtype,new_comm);
+			               &_world(0,0),recvcount,recvdisp,recvtype,_coll);
 
+
+
+    // for (int i = 0; i < 9; ++i) {
+    //     MPI_Barrier(MPI_COMM_WORLD);
+    //     if (rank == i) {
+    //         std::cout << "rank " << rank << " after sending:\n";
+    //         printFieldAll();
+    //     }
+    // }
+    // std::cout << "my_rank: " << std::endl;
+    // printFieldAll();
 }
