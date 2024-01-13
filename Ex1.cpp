@@ -151,9 +151,9 @@ int main(int argc, char* argv[]) {
         std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
         initial_configuration(world, rows, cols, seed, probability/100);
         world_copy = world;
-        std::cout << "initial configuration: " << std::endl;
-        print_field(world, rows, cols);
-        print_status(world, rows, cols);
+        //std::cout << "initial configuration: " << std::endl;
+        //print_field(world, rows, cols);
+        //print_status(world, rows, cols);
         // print_field(world_copy, rows, cols);
 
         double start_time = MPI_Wtime();

@@ -33,12 +33,13 @@ int main(int argc, char* argv[]) {
 
         GameOfLife game(rows, cols, seed, probability / 100,px,py);
         game.initialConfiguration();
-        game.gatherMatrix(all_rows, all_cols);
+        /*game.gatherMatrix(all_rows, all_cols);
+        game.printField();
         if (rank==0) {
             game.printWholeWorld(all_rows, all_cols);
-            game.printStatusAll(all_rows, all_cols);
+            //game.printStatusAll(all_rows, all_cols);
             //game.countAliveAll(all_rows, all_cols);
-        }
+        }*/
         //game.printField();
 
         //std::cout << "Initial configuration: " << std::endl;
@@ -51,13 +52,13 @@ int main(int argc, char* argv[]) {
 
 
 
-        for (int i = 0; i < p; ++i) {
+        /*for (int i = 0; i < p; ++i) {
             MPI_Barrier(MPI_COMM_WORLD);
             if (rank == i) {
                 std::cout << "Rank " << rank << " init Matrix:" << std::endl;
                 game.printField();
             }
-        }
+        }*/
 
         //game.printFieldAll();
         // game.exchangePointToPoint();
@@ -90,7 +91,7 @@ int main(int argc, char* argv[]) {
                 game.printField();
             }
         }*/
-        game.printFieldAll();
+        //game.printFieldAll();
         game.gatherMatrix(all_rows, all_cols);
         if (rank==0) {
             game.printWholeWorld(all_rows, all_cols);
