@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
     int repetitions = std::stoi(argv[6]);
     int px = std::stoi(argv[7]);
     int py = std::stoi(argv[8]);
+
     int rank, all_cols, all_rows;
     int p;
     MPI_Comm_size(MPI_COMM_WORLD, &p);
@@ -73,7 +74,7 @@ int main(int argc, char* argv[]) {
         // game.printStatus();
 
         double start_time = MPI_Wtime();
-        game.runLifep2p(generations);
+        game.runLifep2pCorners(generations);
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
         //std::cout << "\n\nFinal configuration: " << std::endl;

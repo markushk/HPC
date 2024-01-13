@@ -332,8 +332,7 @@ void GameOfLife::exchangePointToPoint() {
         std::cout << "botright: " << _lowerRightRank << "\n";
 
     }*/
-    MPI_Request send_request[4], recv_request[4];
-    MPI_Status send_status[4], recv_status[4];
+
     MPI_Request req[4];
     MPI_Status statuses[4];
 
