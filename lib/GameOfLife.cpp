@@ -224,7 +224,6 @@ void GameOfLife::runLife(int generations, std::string method="p2p") {
                 }
             }
         }
-        // std::copy(&_world(0,0), &_world(0,0)+_rows*_cols,&_worldCopy(0,0));
         _world = _worldCopy;
     }
 }

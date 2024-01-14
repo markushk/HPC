@@ -2,6 +2,8 @@
 #include <iostream>
 #include <mpi.h>
 #include "GameOfLife.hpp"
+#include <algorithm>
+#include <math.h>
 
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
@@ -32,12 +34,14 @@ int main(int argc, char* argv[]) {
 
 
 
-
+    std::vector<double> times(repetitions);
     for (int i = 0; i < repetitions; i++) {
+
+        
 
         GameOfLife game(rows, cols, seed, probability / 100,px,py);
         game.initialConfiguration();
-        int debug = 1;
+        int debug = 0;
         if (debug ==1) {
             std::cout << "debug enabled \n";
             game.gatherMatrix(all_rows, all_cols);
@@ -55,80 +59,41 @@ int main(int argc, char* argv[]) {
             if (rank==0) {
                 game.printWholeWorldGhost(all_rows, all_cols);
             }
+            game.printFieldAll();
+            game.gatherMatrix(all_rows, all_cols);
+            if (rank==0) {
+                game.printWholeWorld(all_rows, all_cols);
+                game.printStatusAll(all_rows, all_cols);
+                
+            }
 
             }
         
-    //     game.gatherMatrix(all_rows, all_cols);
-    //     if (rank==0) {
-    //         game.printWholeWorld(all_rows, all_cols);
-    //         //game.printStatusAll(all_rows, all_cols);
-    //         //game.countAliveAll(all_rows, all_cols);
-    //     }
-    //     game.exchangeCollective();
-    //     for (int i = 0; i < p; ++i) {
-    //         MPI_Barrier(MPI_COMM_WORLD);
-    //         if (rank == i) {
-    //             std::cout << "Rank " << rank << " Final configuration:" << std::endl;
-    //             game.printFieldAll();
-    //     }
-    //    }
-    
-        //game.printField();
-        //game.exchangePointToPoint();
-        //game.printFieldAll();
-        //game.printFieldAll();
-        //game.exchangePointToPoint();
-
-
-
-        /*for (int i = 0; i < p; ++i) {
-            MPI_Barrier(MPI_COMM_WORLD);
-            if (rank == i) {
-                std::cout << "Rank " << rank << " init Matrix:" << std::endl;
-                game.printField();
-            }
-        }*/
-
-        //game.printFieldAll();
-        // game.exchangePointToPoint();
-        // for (int i = 0; i < p; ++i) {
-        //     MPI_Barrier(MPI_COMM_WORLD);
-        //     if (rank == i) {
-        //         std::cout << "Rank " << rank << " Exchanged Matrix:" << std::endl;
-        //         game.printFieldAll();
-        //     }
-        // }
-        //game.printFieldAll();
-        // game.printStatus();
-
+        MPI_Barrier(MPI_COMM_WORLD);
         double start_time = MPI_Wtime();
         game.runLife(generations,std::string(method));
+        MPI_Barrier(MPI_COMM_WORLD);
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
-        //std::cout << "\n\nFinal configuration: " << std::endl;
-        //game.printField();
-        //game.printStatus();
-        //std::cout << "It took " << elapsed_time * 1e6 << " microseconds." << std::endl;
-        //game.create_mpi();
-        //game.testCommunication();
-        //game.gatherMatrix();*/
-        //game.runLife(generations);
-        /*for (int i = 0; i < p; ++i) {
-            MPI_Barrier(MPI_COMM_WORLD);
-            if (rank == i) {
-                std::cout << "Rank " << rank << " Final configuration:" << std::endl;
-                game.printField();
-            }
-        }*/
-        //game.printFieldAll();
-        game.gatherMatrix(all_rows, all_cols);
-        if (rank==0) {
-            game.printWholeWorld(all_rows, all_cols);
-            game.printStatusAll(all_rows, all_cols);
-            //game.countAliveAll(all_rows, all_cols);
-        }
+        times[0]=elapsed_time;
+        
     }
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank==0) {
+    double kernel_sum = 0.0;
+        for (int k = 0; k < repetitions; k++) {
+            kernel_sum += times[k];
+        }
+        double average = kernel_sum / repetitions;
+        double error = 0.0;
+        for (int k = 0; k < repetitions; k++) {
+            error += pow(times[k] - average, 2);
+        }
+        error = sqrt(error / (repetitions - 1));
 
+        printf("%d %d %d %d %.8f %.8f\n", px, py, all_rows, all_cols, average, error);
+    }
+        
     MPI_Finalize();
     return 0;
 }
