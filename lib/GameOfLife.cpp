@@ -310,8 +310,11 @@ void GameOfLife::init_mpi() {
     MPI_Cart_rank(_cart, lowerLeftCoords, &_lowerLeftRank);
     MPI_Cart_rank(_cart, lowerRightCoords, &_lowerRightRank);
     MPI_Cart_rank(_cart, upperLeftCoords, &_upperLeftRank);
+    //MPI_Cart_shift(_cart, 1, 1, &_top, &_bot);
+    //MPI_Cart_shift(_cart, 0, 1, &_left, &_right);
     MPI_Cart_shift(_cart, 1, 1, &_top, &_bot);
     MPI_Cart_shift(_cart, 0, 1, &_left, &_right);
+
     MPI_Comm_rank(_cart, &rank);
     MPI_Cart_coords(_cart, rank, 2, _coords);
 
@@ -469,7 +472,8 @@ void GameOfLife::exchangePointToPoint() {
     }*/
 
 
-
+    MPI_Request req[4];
+    MPI_Status statuses[4];
     MPI_Irecv(&_world(0,_cols-1), 1, _fullColType, _right, 7, _cart, &req[0]);
     MPI_Irecv(&_world(0,0), 1, _fullColType, _left, 8, _cart, &req[1]);
     MPI_Isend(&_world(0,1), 1, _fullColType, _left, 7, _cart, &req[3]);
