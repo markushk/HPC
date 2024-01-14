@@ -318,26 +318,6 @@ void GameOfLife::init_mpi() {
     MPI_Comm_rank(_cart, &rank);
     MPI_Cart_coords(_cart, rank, 2, _coords);
 
-    // 0 1 2
-    // 3 4 5
-    // 6 7 8
-
-    // 0 3 6
-    // 1 4 7
-    // 2 5 8
-
-    // rank 4:
-    // 0 5 10 15 20
-    // 1 6 11 16 21
-    // 2 7 12 17 22
-    // 3 8 13 18 23
-    // 4 9 14 19 24
-
-    // 0 1 2 3 4
-    // 5 6 7 8 9
-    // 10 11 12 13 14
-
-
     _neighbors[0] = _upperLeftRank;
     _neighbors[1] = _upperRightRank;
     _neighbors[2] = _lowerLeftRank;
@@ -352,12 +332,75 @@ void GameOfLife::init_mpi() {
                                           MPI_INFO_NULL, 0, &_coll);
     
 
-    // MPI_Type_contiguous(_cols-2,MPI_CHAR,&_ROW);
-    // MPI_Type_commit(&_ROW);
-    // MPI_Type_vector(_rows-2,1,_cols,MPI_CHAR,&_COL);
-    // MPI_Type_commit(&_COL);
-    // MPI_Type_contiguous(1,MPI_CHAR,&_COR);
-    // MPI_Type_commit(&_COR);
+    for (int i=0; i<8; i++) {
+        sendcount[i] = 1;
+        recvcount[i] = 1;
+    }
+
+    // order: top left, top right, bottom left, bottom right, left, right, top, bottom,  
+    senddisp[0] = c(1, 1);               sendtype[0] =  _cornerType; // top left
+    senddisp[1] = c(1, _cols-2);         sendtype[1] =  _cornerType; // top right
+    senddisp[2] = c(_rows-2, 1);         sendtype[2] =  _cornerType; // bottom left
+    senddisp[3] = c(_rows-2, _cols-2);   sendtype[3] =  _cornerType; // bottom left
+    senddisp[4] = senddisp[0];           sendtype[4] =  _colType; // left
+    senddisp[5] = senddisp[1];           sendtype[5] =  _colType; // right
+    senddisp[6] = senddisp[0];           sendtype[6] =  _rowType; // top
+    senddisp[7] = senddisp[2];           sendtype[7] =  _rowType; // bottom
+
+
+    recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
+    recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
+    recvdisp[2] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
+    recvdisp[3] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
+    recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
+    recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
+    recvdisp[6] = c(0, 1);               recvtype[6] =  _rowType; // top
+    recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
+
+
+    // swap top and bottom
+    //       top left, top right, bottom left, bottom right, left, right, top, bottom
+    // ->    bottom left, bottom right, top left, top right, left, right, bottom, top
+    if (_py<3) {
+        recvdisp[2] = c(0, 0);               recvtype[0] =  _cornerType; // top left
+        recvdisp[3] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
+        recvdisp[0] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
+        recvdisp[1] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
+        recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
+        recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
+        recvdisp[7] = c(0, 1);               recvtype[6] =  _rowType; // top
+        recvdisp[6] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
+    }
+
+    // swap left and right
+    //       top left, top right, bottom left, bottom right, left, right, top, bottom
+    // ->    top right, top left, bottom right, bottom left, right, left, top bottom
+    if (_px<3) {
+        recvdisp[2] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
+        recvdisp[3] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
+        recvdisp[0] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
+        recvdisp[1] = c(0, 0);               recvtype[3] =  _cornerType; // top left
+        recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
+        recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
+        recvdisp[7] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
+        recvdisp[6] = c(0, 1);               recvtype[7] =  _rowType; // top
+    }
+
+    if ((_px<3)&&(_py<3)) {
+        recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
+        recvdisp[1] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
+        recvdisp[2] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
+        recvdisp[3] = c(0, 0);               recvtype[3] =  _cornerType; // top left
+        recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
+        recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
+        recvdisp[6] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
+        recvdisp[7] = c(0, 1);               recvtype[7] =  _rowType; // top
+    }
+
+    for (int i=0; i<8; i++) {
+        senddisp[i] *= sizeof(char);
+        recvdisp[i] *= sizeof(char);
+    }
 }
 
 
@@ -580,129 +623,6 @@ void GameOfLife::exchangePointToPointCorners() {
 }
 
 void GameOfLife::exchangeCollective() {
-    
-    
-    int t = 8;
-    int rank;
-    MPI_Comm_rank(_coll, &rank);
-    // for (int i = 0; i < 9; ++i) {
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     if (rank == i) {
-    //         std::cout << "rank " << rank << " before sending:\n";
-    //         printFieldAll();
-    //     }
-    // }
-
-    int sendcount[t], recvcount[t];
-    MPI_Aint senddisp[t], recvdisp[t];
-    MPI_Datatype sendtype[t], recvtype[t];
-
-    for (int i=0; i<t; i++) {
-        sendcount[i] = 1;
-        recvcount[i] = 1;
-    }
-
-    // order: top left, top right, bottom left, bottom right, left, right, top, bottom,  
-    senddisp[0] = c(1, 1);               sendtype[0] =  _cornerType; // top left
-    senddisp[1] = c(1, _cols-2);         sendtype[1] =  _cornerType; // top right
-    senddisp[2] = c(_rows-2, 1);         sendtype[2] =  _cornerType; // bottom left
-    senddisp[3] = c(_rows-2, _cols-2);   sendtype[3] =  _cornerType; // bottom left
-    senddisp[4] = senddisp[0];           sendtype[4] =  _colType; // left
-    senddisp[5] = senddisp[1];           sendtype[5] =  _colType; // right
-    senddisp[6] = senddisp[0];           sendtype[6] =  _rowType; // top
-    senddisp[7] = senddisp[2];           sendtype[7] =  _rowType; // bottom
-    // senddisp[4] = senddisp[0];           sendtype[4] =  _colType; // left
-    // senddisp[5] = senddisp[1];           sendtype[5] =  _colType; // right
-    // senddisp[6] = senddisp[0];           sendtype[6] =  _rowType; // top
-    // senddisp[7] = senddisp[2];           sendtype[7] =  _rowType; // bottom
-
-
-
-    recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
-    recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
-    recvdisp[2] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
-    recvdisp[3] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
-    recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
-    recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
-    recvdisp[6] = c(0, 1);               recvtype[6] =  _rowType; // top
-    recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
-
-
-        // swap top and bottom
-        //       top left, top right, bottom left, bottom right, left, right, top, bottom
-        // ->    bottom left, bottom right, top left, top right, left, right, bottom, top
-        if (_py<3) {
-            recvdisp[2] = c(0, 0);               recvtype[0] =  _cornerType; // top left
-            recvdisp[3] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
-            recvdisp[0] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
-            recvdisp[1] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
-            recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
-            recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
-            recvdisp[7] = c(0, 1);               recvtype[6] =  _rowType; // top
-            recvdisp[6] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
-        }
-
-        // swap left and right
-        //       top left, top right, bottom left, bottom right, left, right, top, bottom
-        // ->    top right, top left, bottom right, bottom left, right, left, top bottom
-        if (_px<3) {
-            recvdisp[2] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
-            recvdisp[3] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
-            recvdisp[0] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
-            recvdisp[1] = c(0, 0);               recvtype[3] =  _cornerType; // top left
-            recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
-            recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
-            recvdisp[7] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
-            recvdisp[6] = c(0, 1);               recvtype[7] =  _rowType; // top
-        }
-
-        if ((_px<3)&&(_py<3)) {
-            recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
-            recvdisp[1] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
-            recvdisp[2] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
-            recvdisp[3] = c(0, 0);               recvtype[3] =  _cornerType; // top left
-            recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
-            recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
-            recvdisp[6] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
-            recvdisp[7] = c(0, 1);               recvtype[7] =  _rowType; // top
-        }
-
-        
-    //  if (rank == 2) {
-    //      std::cout << "neighbors: ";
-    //      for (int i=0; i<t; i++) {
-    //          std::cout <<" " << _neighbors[i];
-    //      }
-    //      std::cout << std::endl;
-    //      std::cout << "senddisp: ";
-    //      for (int i=0; i<t; i++) {
-    //          std::cout <<" " << senddisp[i];
-    //      }
-    //      std::cout << std::endl;
-    //      std::cout << "recvdisp: ";
-    //      for (int i=0; i<t; i++) {
-    //          std::cout <<" " << recvdisp[i];
-    //      }
-    //      std::cout << std::endl;
-    //  }
-    // byte offsets
-    for (int i=0; i<t; i++) {
-        senddisp[i] *= sizeof(char);
-        recvdisp[i] *= sizeof(char);
-    }
-
     MPI_Neighbor_alltoallw(&_world(0,0),sendcount,senddisp,sendtype,
 			               &_world(0,0),recvcount,recvdisp,recvtype,_coll);
-
-
-
-    // for (int i = 0; i < 9; ++i) {
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     if (rank == i) {
-    //         std::cout << "rank " << rank << " after sending:\n";
-    //         printFieldAll();
-    //     }
-    // }
-    // std::cout << "my_rank: " << std::endl;
-    // printFieldAll();
 }

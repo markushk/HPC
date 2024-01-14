@@ -82,6 +82,9 @@ private:
     int _left;
     int _right;
     int _neighbors[8];
+    int sendcount[8], recvcount[8];
+    MPI_Aint senddisp[8], recvdisp[8];
+    MPI_Datatype sendtype[8], recvtype[8];
 
     char getRandomValue(int row_id, int col_id);
     int countAlive();
