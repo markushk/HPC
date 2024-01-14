@@ -6,6 +6,9 @@
 #include <mpi.h>
 #include <chrono>
 #include <thread>
+#include <algorithm>
+#include <math.h>
+
 
 
 // char get_random_value(const int row_id, const int col_id, const int n,
@@ -145,7 +148,7 @@ int main(int argc, char* argv[]) {
     int seed = std::stoi(argv[4]);
     double probability = std::stod(argv[5]);
     int repetitions = std::stoi(argv[6]);
-
+    std::vector<double> times(repetitions);
     for (int i=0; i<repetitions; i++) {
         std::vector<std::vector<char>> world(rows, std::vector<char>(cols));
         std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
@@ -160,6 +163,7 @@ int main(int argc, char* argv[]) {
         life(world, world_copy, generations, rows, cols);
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
+        times[i]=elapsed_time;
 
         //std::cout << "\n\nfinal configuration: " << std::endl;
         print_field(world, rows, cols);
@@ -167,6 +171,19 @@ int main(int argc, char* argv[]) {
         print_status(world, rows, cols);
         //std::cout << "It took " << elapsed_time * 1e6 << " microseconds." << std::endl;
     }
+        double kernel_sum = 0.0;
+        for (int k = 0; k < repetitions; k++) {
+            kernel_sum += times[k];
+        }
+        double average = kernel_sum / repetitions;
+        double error = 0.0;
+        for (int k = 0; k < repetitions; k++) {
+            error += pow(times[k] - average, 2);
+        }
+        error = sqrt(error / (repetitions - 1));
+
+        printf(" %d %d %.8f %.8f\n", rows, cols, average, error);
+
 
     MPI_Finalize();
     return 0;

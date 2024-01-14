@@ -3,6 +3,9 @@
 
 #include <vector>
 #include <mpi.h>
+#include <iostream>
+
+
 
 
 template <class T>
