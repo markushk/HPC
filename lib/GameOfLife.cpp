@@ -628,33 +628,44 @@ void GameOfLife::exchangeCollective() {
     recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
 
 
-    // swap top and bottom
-    //       top left, top right, bottom left, bottom right, left, right, top, bottom
-    // ->    bottom left, bottom right, top left, top right, left, right, bottom, top
-    if (_py==1) {
-        recvdisp[2] = c(0, 0);               recvtype[0] =  _cornerType; // top left
-        recvdisp[3] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
-        recvdisp[0] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
-        recvdisp[1] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
-        recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
-        recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
-        recvdisp[7] = c(0, 1);               recvtype[6] =  _rowType; // top
-        recvdisp[6] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
-    }
+        // swap top and bottom
+        //       top left, top right, bottom left, bottom right, left, right, top, bottom
+        // ->    bottom left, bottom right, top left, top right, left, right, bottom, top
+        if (_py<3) {
+            recvdisp[2] = c(0, 0);               recvtype[0] =  _cornerType; // top left
+            recvdisp[3] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
+            recvdisp[0] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
+            recvdisp[1] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
+            recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
+            recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
+            recvdisp[7] = c(0, 1);               recvtype[6] =  _rowType; // top
+            recvdisp[6] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
+        }
 
-    // swap left and right
-    //       top left, top right, bottom left, bottom right, left, right, top, bottom
-    // ->    top right, top left, bottom right, bottom left, right, left, top bottom
-    if (_px==1) {
-        recvdisp[2] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
-        recvdisp[3] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
-        recvdisp[0] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
-        recvdisp[1] = c(0, 0);               recvtype[3] =  _cornerType; // top left
-        recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
-        recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
-        recvdisp[7] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
-        recvdisp[6] = c(0, 1);               recvtype[7] =  _rowType; // top
-    }
+        // swap left and right
+        //       top left, top right, bottom left, bottom right, left, right, top, bottom
+        // ->    top right, top left, bottom right, bottom left, right, left, top bottom
+        if (_px<3) {
+            recvdisp[2] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
+            recvdisp[3] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
+            recvdisp[0] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
+            recvdisp[1] = c(0, 0);               recvtype[3] =  _cornerType; // top left
+            recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
+            recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
+            recvdisp[7] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
+            recvdisp[6] = c(0, 1);               recvtype[7] =  _rowType; // top
+        }
+
+        if ((_px<3)&&(_py<3)) {
+            recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
+            recvdisp[1] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
+            recvdisp[2] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
+            recvdisp[3] = c(0, 0);               recvtype[3] =  _cornerType; // top left
+            recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
+            recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
+            recvdisp[6] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
+            recvdisp[7] = c(0, 1);               recvtype[7] =  _rowType; // top
+        }
 
         
     //  if (rank == 2) {
