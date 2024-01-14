@@ -1,2 +1,8 @@
 .direnv/
 .envrc
+p2p/
+p2p_small/
+coll/
+coll_small/
+p2pc/
+p2pc_small/
