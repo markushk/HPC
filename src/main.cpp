@@ -20,6 +20,7 @@ int main(int argc, char* argv[]) {
     std::string method = std::string(argv[9]);
 
 
+
     int rank, all_cols, all_rows;
     int p;
     MPI_Comm_size(MPI_COMM_WORLD, &p);
@@ -36,6 +37,27 @@ int main(int argc, char* argv[]) {
 
         GameOfLife game(rows, cols, seed, probability / 100,px,py);
         game.initialConfiguration();
+        int debug = 1;
+        if (debug ==1) {
+            std::cout << "debug enabled \n";
+            game.gatherMatrix(all_rows, all_cols);
+            if (rank==0) {
+                game.printWholeWorld(all_rows, all_cols);
+            }
+            game.gatherMatrixGhost(all_rows, all_cols);
+
+            if (rank==0) {
+                game.printWholeWorldGhost(all_rows, all_cols);
+            }
+            game.exchangePointToPoint();
+
+            game.gatherMatrixGhost(all_rows, all_cols);
+            if (rank==0) {
+                game.printWholeWorldGhost(all_rows, all_cols);
+            }
+
+            }
+        
     //     game.gatherMatrix(all_rows, all_cols);
     //     if (rank==0) {
     //         game.printWholeWorld(all_rows, all_cols);

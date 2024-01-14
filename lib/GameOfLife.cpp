@@ -12,6 +12,7 @@ GameOfLife::GameOfLife(int rows, int cols, int seed, double probability,int px,i
       _world(_rows, _cols,'#'),
        _worldCopy(_rows, _cols,'#'),
       _wholeWorld(rows*py, cols*px,'#'),
+      _wholeWorldGhost(rows*py+2*py, cols*px+2*px,'#'),
       _cart(MPI_COMM_WORLD), _colType(MPI_DATATYPE_NULL), _rowType(MPI_DATATYPE_NULL), _cornerType(MPI_DATATYPE_NULL),
       _upperRightRank(-1), _lowerLeftRank(-1), _lowerRightRank(-1), _upperLeftRank(-1) {
     init_mpi();
@@ -19,7 +20,7 @@ GameOfLife::GameOfLife(int rows, int cols, int seed, double probability,int px,i
 
 GameOfLife::~GameOfLife() {}
 
-void GameOfLife::initialConfiguration() {
+void GameOfLife::initialConfiguration() {   
     int coords[2];
     int rank;
     MPI_Comm_rank(_cart, &rank);
@@ -27,8 +28,8 @@ void GameOfLife::initialConfiguration() {
 
     for (int i = 1; i < _rows-1; ++i) {
         for (int j = 1; j < _cols-1; ++j) {
-            _world(i,j) = getRandomValue((i-1) + coords[1] * (_rows-2), (j-1) + coords[0] * (_cols-2));
-            // _world(i,j) = '0'+((i-1) + coords[1] * (_rows-2))*_rows+((j-1) + coords[0] * (_cols-2));
+            //_world(i,j) = getRandomValue((i-1) + coords[1] * (_rows-2), (j-1) + coords[0] * (_cols-2));
+            _world(i,j) = '0'+((i-1) + coords[1] * (_rows-2))*_rows+((j-1) + coords[0] * (_cols-2));
         }
     }
 }
@@ -122,6 +123,68 @@ void GameOfLife::printWholeWorld(int all_rows, int all_cols) {
     }
     std::cout << std::endl;
 }
+
+void GameOfLife::printWholeWorldGhost(int all_rows, int all_cols) {
+    all_rows=all_rows+2*_py;
+    all_cols=all_cols+2*_px;
+    int counter = 0;
+    for (int i = 0; i < all_rows; ++i) {
+        counter=0;
+        for (int j = 0; j < all_cols; ++j) {
+            /*if (j % _cols == 0 && j != 0 ) {
+                std::cout << "  ";
+
+            }
+            if (i % _rows == 0 && i != 0 && counter < 1 ) {
+                std::cout << "\n";
+                counter++;
+                //continue;
+            }
+            if ((i % _rows != 0 || j % _cols != 0) || i == 0 || j == 0) {
+
+                if (_wholeWorldGhost(i,j) == '1')
+                        std::cout << " X";
+                    else
+                        std::cout << " .";
+            }*/
+            if (j % _cols == 0 && j != 0 ) {
+                std::cout << "  ";
+
+            }
+            if (i % _rows == 0 && i != 0 && counter < 1 ) {
+                std::cout << "\n";
+                counter++;
+                //continue;
+            }
+            if ((i % _rows != 0 || j % _cols != 0) || i == 0 || j == 0) {
+
+                std::cout << _wholeWorldGhost(i,j) << " ";
+            }
+            
+                
+                
+        }
+        std::cout << std::endl;
+    }
+    //counter=0;
+    std::cout << std::endl << std::endl ;
+}
+
+/*void GameOfLife::printWholeWorldGhost(int all_rows, int all_cols) {
+    all_rows=all_rows+2*_py;
+    all_cols=all_cols+2*_px;
+    for (int i = 0; i < all_rows; ++i) {
+        for (int j = 0; j < all_cols; ++j) {
+            if (_wholeWorldGhost(i,j) == '1')
+                std::cout << " X";
+            else
+                std::cout << " .";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}*/
+
 
 void GameOfLife::printFieldAll() {
     for (int i = 0; i < _rows; ++i) {
@@ -348,6 +411,47 @@ void GameOfLife::gatherMatrix(int all_rows, int all_cols) {
     }
 }
 
+void GameOfLife::gatherMatrixGhost(int all_rows, int all_cols) {
+    int rank, p;
+    MPI_Comm_rank(_cart, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &p);
+    int coords[2];
+    matrix2D<char> wholeWorldGhost(all_rows+_py*2,all_cols+_px*2);
+    std::vector<char> partMatrix((_rows)*(_cols));
+    std::vector<char> recv_buf((_rows)*(_cols));
+    for (int i = 0; i < _rows; ++i) {
+        for (int j = 0; j < _cols; ++j) {
+            partMatrix[(i) * (_cols) + j]=_world(i,j);
+            wholeWorldGhost(i,j)=_world(i,j);
+        }
+    }
+
+    if (rank != 0) {
+        MPI_Send(&partMatrix[0],(_rows)*(_cols) , MPI_CHAR, 0, 1, _cart);
+    }
+
+    if (rank==0) {
+        for (int i = 1; i < p; ++i) {
+            MPI_Recv(&recv_buf[0],(_rows)*(_cols) , MPI_CHAR, i, 1, _cart, MPI_STATUS_IGNORE);
+            MPI_Cart_coords(_cart, i, 2, coords);
+
+
+            for (int i = 0; i < _rows; ++i) {
+                for (int j = 0; j < _cols; ++j) {
+                    //std::cout << recv_buf[i * (_cols-2) + j] << " ";
+                    wholeWorldGhost(i+coords[1]*(_rows),j+coords[0]*(_cols))=recv_buf[i * (_cols) + j];
+                }
+            }
+        }
+        for (int i = 0; i < all_rows + _py*2; ++i) {
+            for (int j = 0; j < all_cols + _px*2; ++j) {
+                _wholeWorldGhost(i,j)=wholeWorldGhost(i,j);
+            }
+        }
+    }
+}
+
+
 void GameOfLife::exchangePointToPoint() {
 
     /*if (rank == 9) {
@@ -364,8 +468,6 @@ void GameOfLife::exchangePointToPoint() {
 
     }*/
 
-    MPI_Request req[4];
-    MPI_Status statuses[4];
 
 
     MPI_Irecv(&_world(0,_cols-1), 1, _fullColType, _right, 7, _cart, &req[0]);
@@ -527,7 +629,7 @@ void GameOfLife::exchangeCollective() {
         if (rank==_neighbors[i])
             own_neighbor = true;
     }
-
+    //own_neighbor = true;
     if (own_neighbor==false) {
              recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
              recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right

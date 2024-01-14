@@ -8,6 +8,8 @@ do
   if [ ! -z "$correct" ]
   then
     echo "$file is wrong"
+  else 
+	 echo "$file is correct"
 	fi 
 	unset correct
 done

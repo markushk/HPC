@@ -29,6 +29,7 @@ public:
     void printFieldAnimated();
     void printField();
     void printWholeWorld(int all_rows, int all_cols);
+    void printWholeWorldGhost(int all_rows, int all_cols);
     //void runLifep2p(int generations);
     //void runLifep2pCorners(int generations);
     void runLife(int generations, std::string method);
@@ -37,6 +38,7 @@ public:
     void testCommunication();
     void pointToPoint();
     void gatherMatrix(int all_rows, int all_cols);
+    void gatherMatrixGhost(int all_rows, int all_cols);
     void exchangePointToPoint();
     void exchangePointToPointCorners();
     void exchangeCollective();
@@ -55,6 +57,7 @@ private:
     matrix2D<char> _world;
     matrix2D<char> _worldCopy;
     matrix2D<char> _wholeWorld;
+    matrix2D<char> _wholeWorldGhost;
     // std::vector<std::vector<char>> _worldCopy;
     // std::vector<std::vector<char>> _wholeWorld;
     MPI_Comm _cart;
