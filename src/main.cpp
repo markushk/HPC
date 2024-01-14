@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     std::vector<double> times(repetitions);
     for (int i = 0; i < repetitions; i++) {
 
-        
+
 
         GameOfLife game(rows, cols, seed, probability / 100,px,py);
         game.initialConfiguration();
@@ -64,19 +64,19 @@ int main(int argc, char* argv[]) {
             if (rank==0) {
                 game.printWholeWorld(all_rows, all_cols);
                 game.printStatusAll(all_rows, all_cols);
-                
+
             }
 
             }
-        
+
         MPI_Barrier(MPI_COMM_WORLD);
         double start_time = MPI_Wtime();
         game.runLife(generations,std::string(method));
         MPI_Barrier(MPI_COMM_WORLD);
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
-        times[0]=elapsed_time;
-        
+        times[i]=elapsed_time;
+
     }
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank==0) {
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 
         printf("%d %d %d %d %.8f %.8f\n", px, py, all_rows, all_cols, average, error);
     }
-        
+
     MPI_Finalize();
     return 0;
 }
