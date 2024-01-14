@@ -28,8 +28,8 @@ void GameOfLife::initialConfiguration() {
 
     for (int i = 1; i < _rows-1; ++i) {
         for (int j = 1; j < _cols-1; ++j) {
-            //_world(i,j) = getRandomValue((i-1) + coords[1] * (_rows-2), (j-1) + coords[0] * (_cols-2));
-            _world(i,j) = '0'+((i-1) + coords[1] * (_rows-2))*_rows+((j-1) + coords[0] * (_cols-2));
+            _world(i,j) = getRandomValue((i-1) + coords[1] * (_rows-2), (j-1) + coords[0] * (_cols-2));
+            // _world(i,j) = '0'+((i-1) + coords[1] * (_rows-2))*_rows+((j-1) + coords[0] * (_cols-2));
         }
     }
 }
@@ -618,67 +618,67 @@ void GameOfLife::exchangeCollective() {
 
 
 
-    // ghost layers:
-    // order: bottom right, bottom left, top right, top left, right, left, bottom, top,
-    // recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
-    // recvdisp[1] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
-    // recvdisp[2] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
-    // recvdisp[3] = c(0, 0);               recvtype[3] =  _cornerType; // top left
-    // recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
-    // recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
-    // recvdisp[6] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
-    // recvdisp[7] = c(0, 1);               recvtype[7] =  _rowType; // top
-    bool own_neighbor = false;
-    for (int i=0;i<t;i++) {
-        if (rank==_neighbors[i])
-            own_neighbor = true;
+    recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
+    recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
+    recvdisp[2] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
+    recvdisp[3] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
+    recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
+    recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
+    recvdisp[6] = c(0, 1);               recvtype[6] =  _rowType; // top
+    recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
+
+
+    // swap top and bottom
+    //       top left, top right, bottom left, bottom right, left, right, top, bottom
+    // ->    bottom left, bottom right, top left, top right, left, right, bottom, top
+    if (_py==1) {
+        recvdisp[2] = c(0, 0);               recvtype[0] =  _cornerType; // top left
+        recvdisp[3] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
+        recvdisp[0] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
+        recvdisp[1] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
+        recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
+        recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
+        recvdisp[7] = c(0, 1);               recvtype[6] =  _rowType; // top
+        recvdisp[6] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
     }
-    //own_neighbor = true;
-    if (own_neighbor==false) {
-             recvdisp[0] = c(0, 0);               recvtype[0] =  _cornerType; // top left
-             recvdisp[1] = c(0, _cols-1);         recvtype[1] =  _cornerType; // top right
-             recvdisp[2] = c(_rows-1, 0);         recvtype[2] =  _cornerType; // bottom left
-             recvdisp[3] = c(_rows-1, _cols-1);   recvtype[3] =  _cornerType; // bottom right
-             recvdisp[4] = c(1, 0);               recvtype[4] =  _colType; // left
-             recvdisp[5] = c(1, _cols-1);         recvtype[5] =  _colType; // right
-             recvdisp[6] = c(0, 1);               recvtype[6] =  _rowType; // top
-             recvdisp[7] = c(_rows-1, 1);         recvtype[7] =  _rowType; // bottom
-    }
-    else {
-        recvdisp[0] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
-        recvdisp[1] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
-        recvdisp[2] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
-        recvdisp[3] = c(0, 0);               recvtype[3] =  _cornerType; // top left
+
+    // swap left and right
+    //       top left, top right, bottom left, bottom right, left, right, top, bottom
+    // ->    top right, top left, bottom right, bottom left, right, left, top bottom
+    if (_px==1) {
+        recvdisp[2] = c(_rows-1, _cols-1);   recvtype[0] =  _cornerType; // bottom right
+        recvdisp[3] = c(_rows-1, 0);         recvtype[1] =  _cornerType; // bottom left
+        recvdisp[0] = c(0, _cols-1);         recvtype[2] =  _cornerType; // top right
+        recvdisp[1] = c(0, 0);               recvtype[3] =  _cornerType; // top left
         recvdisp[4] = c(1, _cols-1);         recvtype[4] =  _colType; // right
         recvdisp[5] = c(1, 0);               recvtype[5] =  _colType; // left
-        recvdisp[6] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
-        recvdisp[7] = c(0, 1);               recvtype[7] =  _rowType; // top
+        recvdisp[7] = c(_rows-1, 1);         recvtype[6] =  _rowType; // bottom
+        recvdisp[6] = c(0, 1);               recvtype[7] =  _rowType; // top
     }
-    
 
         
-     /*if (rank == 2) {
-         std::cout << "neighbors: ";
-         for (int i=0; i<t; i++) {
-             std::cout <<" " << _neighbors[i];
-         }
-         std::cout << std::endl;
-         std::cout << "senddisp: ";
-         for (int i=0; i<t; i++) {
-             std::cout <<" " << senddisp[i];
-         }
-         std::cout << std::endl;
-         std::cout << "recvdisp: ";
-         for (int i=0; i<t; i++) {
-             std::cout <<" " << recvdisp[i];
-         }
-         std::cout << std::endl;
-     }
+    //  if (rank == 2) {
+    //      std::cout << "neighbors: ";
+    //      for (int i=0; i<t; i++) {
+    //          std::cout <<" " << _neighbors[i];
+    //      }
+    //      std::cout << std::endl;
+    //      std::cout << "senddisp: ";
+    //      for (int i=0; i<t; i++) {
+    //          std::cout <<" " << senddisp[i];
+    //      }
+    //      std::cout << std::endl;
+    //      std::cout << "recvdisp: ";
+    //      for (int i=0; i<t; i++) {
+    //          std::cout <<" " << recvdisp[i];
+    //      }
+    //      std::cout << std::endl;
+    //  }
     // byte offsets
     for (int i=0; i<t; i++) {
         senddisp[i] *= sizeof(char);
         recvdisp[i] *= sizeof(char);
-    }*/
+    }
 
     MPI_Neighbor_alltoallw(&_world(0,0),sendcount,senddisp,sendtype,
 			               &_world(0,0),recvcount,recvdisp,recvtype,_coll);
