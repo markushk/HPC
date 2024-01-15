@@ -9,7 +9,7 @@
 
 
 template <class T>
-class matrix2D { 
+class matrix2D {
     std::vector<T> data;
     int columns;
 public:
@@ -103,8 +103,8 @@ void life(matrix2D<char> &world, matrix2D<char> &world_copy, int generations, in
         // print_field(world, rows, cols);
         world(0,0) = world(rows-2,cols-2);
         world(rows-1,cols-1) = world(1,1);
-        world(1,cols-1) = world(rows-2,1);
-        world(rows-1,1) = world(1,cols-2);
+        world(0,cols-1) = world(rows-2,1);
+        world(rows-1,0) = world(1,cols-2);
         for (int i = 1; i < cols-1; ++i) {
             world(0,i) = world(rows-2,i);
             world(rows-1,i) = world(1,i);
@@ -138,7 +138,7 @@ void life(matrix2D<char> &world, matrix2D<char> &world_copy, int generations, in
     world = world_copy;
     }
 }
-    
+
 
 
 int main(int argc, char* argv[]) {
