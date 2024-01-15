@@ -1,7 +1,7 @@
 #!/bin/bash
 
-size=1024
-gens=1
+size=128
+gens=10
 method=$1
 
 mkdir $method
