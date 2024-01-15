@@ -13,12 +13,21 @@ GameOfLife::GameOfLife(int rows, int cols, int seed, double probability,int px,i
        _worldCopy(_rows, _cols,'#'),
       _wholeWorld(rows*py, cols*px,'#'),
       _wholeWorldGhost(rows*py+2*py, cols*px+2*px,'#'),
+      _origWorld(_rows, _cols,'#'),
       _cart(MPI_COMM_WORLD), _colType(MPI_DATATYPE_NULL), _rowType(MPI_DATATYPE_NULL), _cornerType(MPI_DATATYPE_NULL),
       _upperRightRank(-1), _lowerLeftRank(-1), _lowerRightRank(-1), _upperLeftRank(-1) {
     init_mpi();
 }
 
 GameOfLife::~GameOfLife() {}
+
+void GameOfLife::backupWorld() {
+     _origWorld=_world;
+}
+
+void GameOfLife::restoreWorld() {
+    _world=_origWorld;
+}
 
 void GameOfLife::initialConfiguration() {   
     int coords[2];

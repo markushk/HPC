@@ -37,15 +37,18 @@ int main(int argc, char* argv[]) {
     rows=rows/py;
     cols=cols/px;
 
-
+        GameOfLife game(rows, cols, seed, probability / 100,px,py);
+        game.initialConfiguration();
+        game.backupWorld();
 
     std::vector<double> times(repetitions);
     for (int i = 0; i < repetitions; i++) {
 
 
 
-        GameOfLife game(rows, cols, seed, probability / 100,px,py);
-        game.initialConfiguration();
+        //GameOfLife game(rows, cols, seed, probability / 100,px,py);
+        //game.initialConfiguration();
+        game.restoreWorld();
         int debug = 0;
         if (debug ==1) {
             std::cout << "debug enabled \n";
@@ -81,8 +84,15 @@ int main(int argc, char* argv[]) {
         double end_time = MPI_Wtime();
         double elapsed_time = end_time - start_time;
         times[i]=elapsed_time;
+        game.gatherMatrix(all_rows, all_cols);
+            if (rank==0) {
+                game.printWholeWorld(all_rows, all_cols);
+                game.printStatusAll(all_rows, all_cols);
+
+            }
 
     }
+    
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank==0) {
     double kernel_sum = 0.0;

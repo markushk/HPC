@@ -47,6 +47,13 @@ public:
     void exchangeCollective();
     void printFieldAll();
     void printStatusAll(int all_rows, int all_cols);
+    void backupWorld();
+    void restoreWorld();
+    //matrix2D<char> _world;
+    //matrix2D<char> _worldCopy;
+    //matrix2D<char> _wholeWorld;
+    //matrix2D<char> _wholeWorldGhost;
+    //matrix2D<char> _origWorld;
 
 
 
@@ -57,10 +64,11 @@ private:
     double _probability;
     int _px;
     int _py;
-    matrix2D<char> _world;
-    matrix2D<char> _worldCopy;
-    matrix2D<char> _wholeWorld;
-    matrix2D<char> _wholeWorldGhost;
+     matrix2D<char> _world;
+     matrix2D<char> _worldCopy;
+     matrix2D<char> _wholeWorld;
+     matrix2D<char> _wholeWorldGhost;
+     matrix2D<char> _origWorld;
     // std::vector<std::vector<char>> _worldCopy;
     // std::vector<std::vector<char>> _wholeWorld;
     MPI_Comm _cart;
