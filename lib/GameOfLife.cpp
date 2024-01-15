@@ -595,7 +595,7 @@ void GameOfLife::exchangePointToPointCorners() {
     MPI_Irecv(&_world(1,0), 1, _colType, _left, 8, _cart, &req[1]);
     MPI_Isend(&_world(1,1), 1, _colType, _left, 7, _cart, &req[3]);
     MPI_Isend(&_world(1,_cols-2), 1, _colType, _right, 8, _cart, &req[2]);
-    
+    MPI_Waitall(4, req, statuses);
 
     MPI_Irecv(&_world(_rows-1,1), 1, _rowType, _bot, 5, _cart, &req[1]);
     MPI_Irecv(&_world(0,1), 1, _rowType, _top, 6, _cart, &req[0]);
