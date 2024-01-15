@@ -149,10 +149,16 @@ int main(int argc, char* argv[]) {
     double probability = std::stod(argv[5]);
     int repetitions = std::stoi(argv[6]);
     std::vector<double> times(repetitions);
+    std::vector<std::vector<char>> world(rows, std::vector<char>(cols));
+    std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
+    std::vector<std::vector<char>> world_orig(rows, std::vector<char>(cols));
+
+    initial_configuration(world_orig, rows, cols, seed, probability/100);
     for (int i=0; i<repetitions; i++) {
-        std::vector<std::vector<char>> world(rows, std::vector<char>(cols));
-        std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
-        initial_configuration(world, rows, cols, seed, probability/100);
+        world=world_orig;
+        // std::vector<std::vector<char>> world(rows, std::vector<char>(cols));
+        // std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
+        // initial_configuration(world, rows, cols, seed, probability/100);
         world_copy = world;
         //std::cout << "initial configuration: " << std::endl;
         //print_field(world, rows, cols);
