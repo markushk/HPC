@@ -6,11 +6,16 @@
 #include <math.h>
 
 int main(int argc, char* argv[]) {
-    MPI_Init(&argc, &argv);
     if (argc != 10) {
       std::cerr << "Usage: " << argv[0] << " <generations> <rows> <cols> <seed> <probability(%)> <repetitions> <px> <py> <method>\n";
-        return EXIT_FAILURE;
+      std::cerr << "Got: " << argc << " arguments:\n";
+      for (int i = 0; i < argc; i++) {
+        std::cerr << argv[i] << " ";
+      }
+      std::cerr << "\n";
+      return EXIT_FAILURE;
     }
+    MPI_Init(&argc, &argv);
     int generations = std::stoi(argv[1]);
     int rows = std::stoi(argv[2]);
     int cols = std::stoi(argv[3]);
