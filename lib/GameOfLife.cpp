@@ -200,8 +200,6 @@ void GameOfLife::runLife(int generations, std::string method="p2p") {
 
 
 
-
-
 int GameOfLife::countAlive() {
     int alive = 0;
     for (int i = 1; i < _rows-1; ++i) {

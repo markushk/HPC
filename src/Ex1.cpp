@@ -11,19 +11,6 @@
 
 
 
-// char get_random_value(const int row_id, const int col_id, const int n,
-// 			 const int seed) {
-//     char r = '0';
-//     int my_seed = seed + row_id * n + col_id;
-//     //printf("my_seed: %d\n", my_seed);
-//     srand(my_seed);
-//     //rand();
-//     //printf("rand=%d\n", rand());
-//     rand();
-//     r = (rand() % 2) ? '1' : '0';
-//     return r;
-// }
-
 char get_random_value(const int row_id, const int col_id, const int n, const int seed, double probability) {
     char r = '0';
     int my_seed = seed + row_id * n + col_id;
@@ -130,7 +117,6 @@ void life(std::vector<std::vector<char>> &world, std::vector<std::vector<char>> 
             }
         }
     world = world_copy;
-    // print_field(world, rows, cols);
     }
 }
     
@@ -156,14 +142,7 @@ int main(int argc, char* argv[]) {
     initial_configuration(world_orig, rows, cols, seed, probability/100);
     for (int i=0; i<repetitions; i++) {
         world=world_orig;
-        // std::vector<std::vector<char>> world(rows, std::vector<char>(cols));
-        // std::vector<std::vector<char>> world_copy(rows, std::vector<char>(cols));
-        // initial_configuration(world, rows, cols, seed, probability/100);
         world_copy = world;
-        //std::cout << "initial configuration: " << std::endl;
-        //print_field(world, rows, cols);
-        //print_status(world, rows, cols);
-        // print_field(world_copy, rows, cols);
 
         double start_time = MPI_Wtime();
         life(world, world_copy, generations, rows, cols);
@@ -171,12 +150,9 @@ int main(int argc, char* argv[]) {
         double elapsed_time = end_time - start_time;
         times[i]=elapsed_time;
 
-        //std::cout << "\n\nfinal configuration: " << std::endl;
-        print_field(world, rows, cols);
-
-        print_status(world, rows, cols);
-        //std::cout << "It took " << elapsed_time * 1e6 << " microseconds." << std::endl;
     }
+        print_field(world, rows, cols);
+        print_status(world, rows, cols);
         double kernel_sum = 0.0;
         for (int k = 0; k < repetitions; k++) {
             kernel_sum += times[k];
