@@ -172,9 +172,9 @@ int main(int argc, char* argv[]) {
         times[i]=elapsed_time;
 
         //std::cout << "\n\nfinal configuration: " << std::endl;
-        print_field(world, rows, cols);
+        //print_field(world, rows, cols);
 
-        print_status(world, rows, cols);
+        //print_status(world, rows, cols);
         //std::cout << "It took " << elapsed_time * 1e6 << " microseconds." << std::endl;
     }
         double kernel_sum = 0.0;
