@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         game.backupWorld();
 
     std::vector<double> times(repetitions);
-    int debug = 1;
+    int debug = 0;
     for (int i = 0; i < repetitions; i++) {
 
         game.restoreWorld();
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
         }
 
     }
-    
+
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank==0) {
     double kernel_sum = 0.0;
