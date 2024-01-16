@@ -69,8 +69,6 @@ private:
      matrix2D<char> _wholeWorld;
      matrix2D<char> _wholeWorldGhost;
      matrix2D<char> _origWorld;
-    // std::vector<std::vector<char>> _worldCopy;
-    // std::vector<std::vector<char>> _wholeWorld;
     MPI_Comm _cart;
     MPI_Comm _coll;
     MPI_Datatype _colType;
@@ -96,6 +94,8 @@ private:
     int sendcount[8], recvcount[8];
     MPI_Aint senddisp[8], recvdisp[8];
     MPI_Datatype sendtype[8], recvtype[8];
+    MPI_Request _req[4];
+    MPI_Status _statuses[4];
 
     char getRandomValue(int row_id, int col_id);
     int countAlive();
